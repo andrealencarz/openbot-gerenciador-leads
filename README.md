@@ -1,6 +1,6 @@
 # Gerenciador de Cidades & Nichos (Buscador de Leads)
 
-CRUD local para manter a lista de cidades, bairros e nichos de prospecção, com busca, filtros e status editável (não iniciada / em andamento / prospectada). Dados em **SQLite** (`gerenciador.db`), persistem entre navegadores.
+CRUD local para gerenciar **leads, campanhas**, cidades/bairros e nichos de prospecção, com busca, filtros por status e status editável (leads: novo → contato feito → proposta enviada → reunião marcada → fechado/perdido). Dados em **SQLite** (`gerenciador.db`), persistem entre navegadores.
 
 ## Rodar
 
