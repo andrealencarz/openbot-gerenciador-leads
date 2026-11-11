@@ -194,6 +194,9 @@ dialog textarea{resize:vertical;min-height:56px}
 </dialog>
 
 <div class="toast" id="toast"></div>
+<div id="warn" style="display:none;position:sticky;top:10px;z-index:8;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.5);color:var(--gz-amber);padding:10px 14px;border-radius:12px;font-size:.84rem;margin-bottom:14px">
+⚠️ Os dados <b>não estão sendo gravados no SQLite</b> — esta aba está sem acesso ao servidor local. Abra o gerenciador em <b>http://localhost:8642/</b> (evite abrir o arquivo direto pelo Finder).
+</div>
 <input type="file" id="fileImport" accept=".json" style="display:none">
 
 <script>
@@ -231,16 +234,20 @@ const STATUS_CAMP=["planejada","ativa","pausada","concluida"];
 const STATUS_CIDADE=["nao iniciada","em andamento","prospectada"];
 
 const KEY="gerenciador_leads_v2";
-let storageOk=true;
+let storageOk=true,serverOk=true;
 let data={cidades:structuredClone(SEED_CIDADES),nichos:structuredClone(SEED_NICHOS),leads:[],campanhas:[]};
 try{
   const saved=JSON.parse(localStorage.getItem(KEY)||"null");
   if(saved&&Array.isArray(saved.cidades))data=saved;
 }catch(e){storageOk=false}
 let saveTimer=null;
+function alertaPersistencia(){
+  if($("warn").style.display==="block")return;
+  $("warn").style.display="block";
+}
 fetch("/api/state").then(r=>r.json()).then(j=>{
   if(j&&Array.isArray(j.cidades)&&j.cidades.length){data=j;render()}
-}).catch(()=>{});
+}).catch(()=>{serverOk=false;alertaPersistencia()});
 let tab="dashboard",editIdx=null;
 const $=id=>document.getElementById(id);
 function save(){
@@ -248,7 +255,7 @@ function save(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
     fetch("/api/state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
-      .then(r=>r.json()).then(j=>{if(j&&Array.isArray(j.cidades)){data=j;stats()}}).catch(()=>{});
+      .then(r=>r.json()).then(j=>{if(j&&Array.isArray(j.cidades)){data=j;stats()}}).catch(()=>{serverOk=false;alertaPersistencia()});
   },300);
 }
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
