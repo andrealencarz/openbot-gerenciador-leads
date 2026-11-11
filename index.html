@@ -31,7 +31,7 @@ input,select{font:inherit;background:var(--card2);border:1px solid var(--border)
 input:focus,select:focus{border-color:var(--accent)}
 input[type=search]{flex:1;min-width:200px}
 .tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content;flex-wrap:wrap}
-.tab{padding:8px 20px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600;background:transparent}
+.tab{padding:8px 20px;border-radius:8px;cursor:pointer;color:#cfd4e2;background:var(--card2);font-weight:600}
 .tab.active{background:var(--accent);color:#fff}
 table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:.9rem;vertical-align:top}
@@ -84,7 +84,9 @@ dialog textarea{resize:vertical;min-height:60px}
 
   <div class="searchbar">
     <input type="search" id="busca" placeholder="🔍 Buscar por nome, telefone, cidade, nicho…">
-    <select id="filtroStatus" style="min-width:180px">
+    <select id="filtroCidade" style="min-width:150px"><option value="">Cidade: todas</option></select>
+    <select id="filtroUf" style="min-width:130px"><option value="">Estado: todos</option></select>
+    <select id="filtroStatus" style="min-width:170px">
       <option value="">Todos os status</option>
     </select>
   </div>
@@ -223,23 +225,64 @@ function norm(s){return String(s==null?"":s).toLowerCase().normalize("NFD").repl
 function optList(arr,v){return arr.map(s=>`<option ${v===s?"selected":""} value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join("")}
 function filtroAtual(){
   const sel=$("filtroStatus");
-  const opts=new Set();
-  (data.leads||[]).forEach(l=>opts.add(l.status||"novo"));
-  STATUS_LEADS.forEach(s=>opts.add(s));
-  sel.innerHTML=`<option value="">Todos os status</option>`+[...opts].map(s=>`<option ${sel.value===s?"selected":""} value="${s}">${esc(s)}</option>`).join("");
+  let opts=[];
+  if(tab==="leads"){opts=new Set();(data.leads||[]).forEach(l=>opts.add(l.status||"novo"));STATUS_LEADS.forEach(s=>opts.add(s))}
+  else if(tab==="campanhas"){opts=new Set();(data.campanhas||[]).forEach(c=>opts.add(c.status||"planejada"));STATUS_CAMP.forEach(s=>opts.add(s))}
+  else if(tab==="cidades"){opts=new Set();STATUS_CIDADE.forEach(s=>opts.add(s))}
+  else{sel.style.display="none";return ""}
+  sel.style.display="";
+  sel.innerHTML=`<option value="">Todos os status</option>`+[...opts].sort().map(s=>`<option ${sel.value===s?"selected":""} value="${s}">${esc(s)}</option>`).join("");
   return sel.value;
 }
+function filtrosCidadeUf(){
+  const fc=$("filtroCidade"),fu=$("filtroUf");
+  const cidades=new Set();const ufs=new Set();
+  data.cidades.forEach(c=>{if(c.cidade)cidades.add(c.cidade);if(c.uf)ufs.add(c.uf)});
+  data.leads.forEach(l=>{if(l.cidade)cidades.add(l.cidade)});
+  const cv=fc.value,uv=fu.value;
+  fc.innerHTML=`<option value="">Cidade: todas</option>`+[...cidades].sort().map(c=>`<option ${cv===c?"selected":""} value="${esc(c)}">${esc(c)}</option>`).join("");
+  fu.innerHTML=`<option value="">Estado: todos</option>`+[...ufs].sort().map(u=>`<option ${uv===u?"selected":""} value="${esc(u)}">${esc(u)}</option>`).join("");
+  const mostrar=(tab==="leads"||tab==="cidades");
+  fc.style.display=mostrar?"":"none";
+  fu.style.display=mostrar?"":"none";
+  return {cidade:cv,uf:uv};
+}
+function ufDe(cidade){
+  const c=data.cidades.find(x=>norm(x.cidade)===norm(cidade||""));
+  return c?(c.uf||""):"";
+}
+const PAGESIZE=25;
+let pagina={leads:1,campanhas:1,cidades:1,nichos:1};
+function paginar(lista){
+  const total=lista.length;
+  const pags=Math.max(1,Math.ceil(total/PAGESIZE));
+  const p=Math.min(pagina[tab],pags);
+  pagina[tab]=p;
+  const fatia=lista.slice((p-1)*PAGESIZE,p*PAGESIZE);
+  let ctrl="";
+  if(pags>1||total>PAGESIZE){
+    ctrl=`<div style="display:flex;gap:10px;align-items:center;justify-content:center;padding:12px">
+    <button class="btn-ghost" ${p<=1?"disabled":""} onclick="mudarPag(-1)">‹ Anterior</button>
+    <small style="color:var(--muted)">Página ${p} de ${pags} · ${total} registro${total===1?"":"s"}</small>
+    <button class="btn-ghost" ${p>=pags?"disabled":""} onclick="mudarPag(1)">Próxima ›</button></div>`;
+  }
+  return {fatia,ctrl};
+}
+window.mudarPag=d=>{pagina[tab]=Math.max(1,(pagina[tab]||1)+d);render();$("tabela"+tab.charAt(0).toUpperCase()+tab.slice(1)).scrollIntoView({block:"start"})};
 function render(){
   stats();
   $("dlCidades").innerHTML=data.cidades.map(c=>`<option value="${esc(c.cidade)}">`).join("");
   $("dlNichos").innerHTML=data.nichos.map(n=>`<option value="${esc(n.nome)}">`).join("");
   const q=norm($("busca").value.trim());
   const fs=filtroAtual();
+  const {cidade:fCid,uf:fUf}=filtrosCidadeUf();
 
-  const ls=data.leads.map((l,i)=>{
+  let lsRows=data.leads.map((l,i)=>{
     const hay=norm([l.nome,l.telefone,l.email,l.cidade,l.nicho,l.status,l.obs].join(" "));
     if(!hay.includes(q))return "";
     if(fs&&l.status!==fs)return "";
+    if(fCid&&norm(l.cidade||"")!==norm(fCid))return "";
+    if(fUf&&norm(ufDe(l.cidade))!==norm(fUf))return "";
     const siteTag=l.site==="sem site"?`<span class="tag sem">sem site</span>`:l.site==="com site"?`<span class="tag">com site</span>`:`<span class="tag">?</span>`;
     return `<tr><td><b>${esc(l.nome)}</b><br><small style="color:var(--muted)">${esc(l.telefone||"")}${l.telefone&&l.email?" · ":""}${esc(l.email||"")}</small></td>
     <td>${esc(l.cidade||"—")}<br><small style="color:var(--muted)">${esc(l.nicho||"")}</small></td>
@@ -247,36 +290,44 @@ function render(){
     <td><select class="status" onchange="chStatus('leads',${i},this.value)">${optList(STATUS_LEADS,l.status)}</select></td>
     <td>${esc(l.obs||"")}</td>
     <td class="actions"><button class="btn-ghost" onclick="edit('leads',${i})">✏️ Editar</button><button class="btn-danger" onclick="del('leads',${i})">🗑️</button></td></tr>`;
-  }).join("");
-  $("tabelaLeads").innerHTML=ls?`<table><thead><tr><th>Lead</th><th>Cidade / Nicho</th><th>Site</th><th>Status</th><th>Obs.</th><th></th></tr></thead><tbody>${ls}</tbody></table>`:`<div class="empty">Nenhum lead ainda — clique em <b>+ Adicionar</b> para cadastrar o primeiro.</div>`;
+  }).filter(Boolean);
+  const lPag=paginar(lsRows);
+  $("tabelaLeads").innerHTML=(lPag.fatia.length?`<table><thead><tr><th>Lead</th><th>Cidade / Nicho</th><th>Site</th><th>Status</th><th>Obs.</th><th></th></tr></thead><tbody>${lPag.fatia.join("")}</tbody></table>`:`<div class="empty">Nenhum lead — clique em <b>+ Adicionar</b> para cadastrar o primeiro.</div>`)+lPag.ctrl;
 
-  const cms=data.campanhas.map((x,i)=>{
-    const hay=norm([x.nome,x.nicho,x.cidades,x.status,x.obs].join(" "));
+  const cmsRows=data.campanhas.map((x,i)=>{
+    const hay=norm([x.nome,x.nicho,(x.cidades||[]).join(" "),x.status,x.obs].join(" "));
     if(!hay.includes(q))return "";
+    if(fs&&x.status!==fs)return "";
     return `<tr><td><b>${esc(x.nome)}</b></td><td>${esc(x.nicho||"—")}</td><td>${(x.cidades||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join("")||"—"}</td>
     <td><select class="status" onchange="chStatus('campanhas',${i},this.value)">${optList(STATUS_CAMP,x.status)}</select></td>
     <td>${esc(x.obs||"")}</td>
     <td class="actions"><button class="btn-ghost" onclick="edit('campanhas',${i})">✏️ Editar</button><button class="btn-danger" onclick="del('campanhas',${i})">🗑️</button></td></tr>`;
-  }).join("");
-  $("tabelaCampanhas").innerHTML=cms?`<table><thead><tr><th>Campanha</th><th>Nicho</th><th>Cidades</th><th>Status</th><th>Obs.</th><th></th></tr></thead><tbody>${cms}</tbody></table>`:`<div class="empty">Nenhuma campanha ainda.</div>`;
+  }).filter(Boolean);
+  const cPag=paginar(cmsRows);
+  $("tabelaCampanhas").innerHTML=(cPag.fatia.length?`<table><thead><tr><th>Campanha</th><th>Nicho</th><th>Cidades</th><th>Status</th><th>Obs.</th><th></th></tr></thead><tbody>${cPag.fatia.join("")}</tbody></table>`:`<div class="empty">Nenhuma campanha ainda.</div>`)+cPag.ctrl;
 
-  const cs=data.cidades.map((c,i)=>{
+  const csRows=data.cidades.map((c,i)=>{
     const hay=norm(c.cidade+" "+c.uf+" "+c.bairros.join(" "));
     if(!hay.includes(q))return "";
+    if(fs&&c.status!==fs)return "";
+    if(fCid&&norm(c.cidade)!==norm(fCid))return "";
+    if(fUf&&norm(c.uf)!==norm(fUf))return "";
     const bs=c.bairros.length?c.bairros.map(b=>`<span class="tag">${esc(b)}</span>`).join(""):`<span style="color:var(--muted)">—</span>`;
     return `<tr><td><b>${esc(c.cidade)}</b></td><td>${esc(c.uf)}</td><td>${bs}</td>
     <td><select class="status" onchange="chStatus('cidades',${i},this.value)">${optList(STATUS_CIDADE,c.status)}</select></td>
     <td class="actions"><button class="btn-ghost" onclick="edit('cidades',${i})">✏️ Editar</button><button class="btn-danger" onclick="del('cidades',${i})">🗑️</button></td></tr>`;
-  }).join("");
-  $("tabelaCidades").innerHTML=cs?`<table><thead><tr><th>Cidade</th><th>UF</th><th>Bairros</th><th>Status</th><th></th></tr></thead><tbody>${cs}</tbody></table>`:`<div class="empty">Nenhuma cidade encontrada.</div>`;
+  }).filter(Boolean);
+  const cidPag=paginar(csRows);
+  $("tabelaCidades").innerHTML=(cidPag.fatia.length?`<table><thead><tr><th>Cidade</th><th>UF</th><th>Bairros</th><th>Status</th><th></th></tr></thead><tbody>${cidPag.fatia.join("")}</tbody></table>`:`<div class="empty">Nenhuma cidade encontrada.</div>`)+cidPag.ctrl;
 
-  const ns=data.nichos.map((n,i)=>{
+  const nsRows=data.nichos.map((n,i)=>{
     const hay=norm(n.nome+" "+(n.obs||""));
     if(!hay.includes(q))return "";
     return `<tr><td><b>${esc(n.nome)}</b></td><td>${esc(n.obs||"—")}</td>
     <td class="actions"><button class="btn-ghost" onclick="edit('nichos',${i})">✏️ Editar</button><button class="btn-danger" onclick="del('nichos',${i})">🗑️</button></td></tr>`;
-  }).join("");
-  $("tabelaNichos").innerHTML=ns?`<table><thead><tr><th>Nicho</th><th>Observações</th><th></th></tr></thead><tbody>${ns}</tbody></table>`:`<div class="empty">Nenhum nicho encontrado.</div>`;
+  }).filter(Boolean);
+  const nPag=paginar(nsRows);
+  $("tabelaNichos").innerHTML=(nPag.fatia.length?`<table><thead><tr><th>Nicho</th><th>Observações</th><th></th></tr></thead><tbody>${nPag.fatia.join("")}</tbody></table>`:`<div class="empty">Nenhum nicho encontrado.</div>`)+nPag.ctrl;
 }
 window.chStatus=(tab,i,v)=>{data[tab][i].status=v;save();stats();toast("Status atualizado")};
 const CAMPOS={
@@ -325,14 +376,16 @@ $("btnSave").onclick=()=>{
   if(editIdx&&editIdx.tab===kind){data[kind][editIdx.i]=obj}else{data[kind].push(obj)}
   save();$("dlg").close();render();toast("Salvo ✓");
 };
-$("busca").oninput=render;
-$("filtroStatus").onchange=render;
+$("busca").oninput=()=>{pagina[tab]=1;render()};
+$("filtroStatus").onchange=()=>{pagina[tab]=1;render()};
+$("filtroCidade").onchange=()=>{pagina[tab]=1;render()};
+$("filtroUf").onchange=()=>{pagina[tab]=1;render()};
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   t.classList.add("active");tab=t.dataset.tab;
   ["tabelaLeads","tabelaCampanhas","tabelaCidades","tabelaNichos"].forEach(id=>$(id).style.display="none");
   $("tabela"+tab.charAt(0).toUpperCase()+tab.slice(1)).style.display="block";
-  $("filtroStatus").style.display=(tab==="leads"||tab==="campanhas")?"block":"none";
+  pagina[tab]=1;
   render();
 });
 $("btnExport").onclick=()=>{
