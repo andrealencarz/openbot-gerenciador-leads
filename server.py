@@ -61,6 +61,62 @@ def sync(c, data):
             c.execute("DELETE FROM %s WHERE id IN (%s)" % (t, ",".join("?" * len(a_remover))), tuple(a_remover))
     c.commit()
 
+def _norm(s):
+    import unicodedata
+    s = unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode().lower()
+    return " ".join(s.split())
+
+def _digits(s):
+    return "".join(ch for ch in str(s or "") if ch.isdigit())
+
+def _chave(it):
+    tel = _digits(it.get("telefone"))
+    if len(tel) >= 10:
+        return "tel:" + tel[-10:]
+    return "nome:" + _norm(it.get("nome")) + "|" + _norm(it.get("cidade"))
+
+def importar_leads(c, leads, max_novos=None):
+    """Insere leads evitando duplicados. Não apaga nada existentes."""
+    existentes = set()
+    for r in c.execute("SELECT nome, telefone, cidade FROM leads"):
+        existentes.add(_chave({"nome": r[0], "telefone": r[1], "cidade": r[2]}))
+    novos, duplicados, invalidos = [], 0, 0
+    for it in leads or []:
+        if not _norm(it.get("nome")):
+            invalidos += 1
+            continue
+        k = _chave(it)
+        if k in existentes:
+            duplicados += 1
+            continue
+        if max_novos is not None and len(novos) >= max_novos:
+            break
+        vals = [
+            (it.get("nome") or "").strip(),
+            (it.get("telefone") or "").strip(),
+            (it.get("email") or "").strip(),
+            (it.get("cidade") or "").strip(),
+            (it.get("nicho") or "").strip(),
+            it.get("site") or "sem site",
+            it.get("status") or "novo",
+            (it.get("obs") or "").strip(),
+        ]
+        cur = c.execute(
+            "INSERT INTO leads(nome,telefone,email,cidade,nicho,site,status,obs) VALUES(?,?,?,?,?,?,?,?)", vals)
+        existentes.add(k)
+        novos.append({"id": cur.lastrowid, "nome": vals[0], "cidade": vals[3]})
+    # cidades que receberam lead passam de "nao iniciada" para "em andamento"
+    cidades_ativas = []
+    visitadas = {n["cidade"] for n in novos if n["cidade"]}
+    for cidade in visitadas:
+        row = c.execute("SELECT id,status FROM cidades WHERE lower(trim(cidade))=lower(trim(?))", (cidade,)).fetchone()
+        if row and (row[1] or "") == "nao iniciada":
+            c.execute("UPDATE cidades SET status='em andamento' WHERE id=?", (row[0],))
+            cidades_ativas.append(cidade)
+    c.commit()
+    return {"novos": len(novos), "duplicados": duplicados, "invalidos": invalidos,
+            "cidades_atualizadas": cidades_ativas, "leads": novos}
+
 class H(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=ROOT, **kw)
@@ -80,23 +136,47 @@ class H(http.server.SimpleHTTPRequestHandler):
         self._json({}, 204)
 
     def do_GET(self):
-        if self.path == "/api/state":
+        path = self.path.split("?")[0]
+        if path == "/api/state":
             c = db()
             try:
                 self._json(load(c))
             finally:
                 c.close()
             return
+        if path == "/api/campanhas":
+            c = db()
+            try:
+                d = load(c)
+            finally:
+                c.close()
+            ativas = [x for x in d["campanhas"] if _norm(x.get("status")) == "ativa"]
+            self._json({"total": len(ativas), "campanhas": ativas})
+            return
+        if path == "/api/ping":
+            self._json({"ok": True, "db": os.path.exists(DB)})
+            return
         super().do_GET()
 
     def do_POST(self):
-        if self.path == "/api/state":
+        path = self.path.split("?")[0]
+        if path == "/api/state":
             n = int(self.headers.get("Content-Length", 0))
             data = json.loads(self.rfile.read(n) or b"{}")
             c = db()
             try:
                 sync(c, data)
                 self._json(load(c))
+            finally:
+                c.close()
+            return
+        if path == "/api/leads/import":
+            n = int(self.headers.get("Content-Length", 0))
+            data = json.loads(self.rfile.read(n) or b"{}")
+            c = db()
+            try:
+                res = importar_leads(c, data.get("leads"), data.get("max_novos"))
+                self._json(res)
             finally:
                 c.close()
             return
