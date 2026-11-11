@@ -157,8 +157,13 @@ dialog textarea{resize:vertical;min-height:56px}
 
   <div id="dlgCampanha" style="display:none">
     <label>Nome da campanha *</label><input id="fcNome" placeholder="Ex.: Odontos sem site — Fortaleza">
-    <label>Nicho</label><input id="fcNicho" placeholder="Clínicas odontológicas">
-    <label>Cidades (separadas por vírgula)</label><textarea id="fcCidades" placeholder="Fortaleza, Teresina"></textarea>
+    <div class="grid2">
+      <div><label>Nicho</label><select id="fcNicho"></select></div>
+      <div><label>Estado (filtra cidades)</label><select id="fcUfFiltro"></select></div>
+    </div>
+    <label>Cidades-alvo (Ctrl/Cmd + clique para várias)</label>
+    <select id="fcCidades" multiple size="6" style="width:100%"></select>
+    <div style="margin-top:6px"><button type="button" class="btn-ghost" id="fcCidTodas" style="padding:5px 10px;font-size:.78rem">Marcar todas</button></div>
     <label>Status</label>
     <select id="fcStatus">
       <option value="planejada">Planejada</option><option value="ativa">Ativa</option>
@@ -318,6 +323,14 @@ function ufDe(cidade){
   const c=data.cidades.find(x=>norm(x.cidade)===norm(cidade||""));
   return c?(c.uf||""):"";
 }
+function atualizarCidCampanha(alvo){
+  const uf=$("fcUfFiltro").value;
+  const cidades=data.cidades.filter(c=>!uf||c.uf===uf);
+  const escolhidas=new Set((alvo||[...$("fcCidades").selectedOptions].map(o=>o.value)));
+  $("fcCidades").innerHTML=cidades.map(c=>`<option value="${esc(c.cidade)}" ${escolhidas.has(c.cidade)?"selected":""}>${esc(c.cidade)}${c.uf?" — "+esc(c.uf):""}</option>`).join("");
+}
+$("fcUfFiltro").onchange=()=>atualizarCidCampanha();
+$("fcCidTodas").onclick=()=>{[...$("fcCidades").options].forEach(op=>op.selected=true)};
 const PAGESIZE=25;
 let pagina={leads:1,campanhas:1,cidades:1,nichos:1};
 function paginar(lista){
@@ -408,7 +421,16 @@ function abrir(kind,title,o){
   Object.entries(PANES).forEach(([k,id])=>$(id).style.display=k===kind?"block":"none");
   const set=(id,v)=>{const el=$(id);if(el)el.value=v||""};
   if(kind==="leads"){set("flNome",o.nome);set("flTel",o.telefone);set("flEmail",o.email);set("flCidade",o.cidade);set("flNicho",o.nicho);set("flSite",o.site||"sem site");set("flStatus",o.status||"novo");set("flObs",o.obs)}
-  if(kind==="campanhas"){set("fcNome",o.nome);set("fcNicho",o.nicho);set("fcCidades",(o.cidades||[]).join(", "));set("fcStatus",o.status||"planejada");set("fcObs",o.obs)}
+  if(kind==="campanhas"){
+    set("fcNome",o.nome);set("fcStatus",o.status||"planejada");set("fcObs",o.obs);
+    // nicho: select com nichos cadastrados
+    $("fcNicho").innerHTML=`<option value="">—</option>`+data.nichos.map(n=>`<option value="${esc(n.nome)}" ${o.nicho===n.nome?"selected":""}>${esc(n.nome)}</option>`).join("")+(o.nicho&&!data.nichos.some(n=>n.nome===o.nicho)?`<option value="${esc(o.nicho)}" selected>${esc(o.nicho)}</option>`:"");
+    // estado: filtro
+    const alvo=o.cidades||[];
+    const ufSalvo=alvo.length?ufDe(alvo[0]):"";
+    $("fcUfFiltro").innerHTML=`<option value="">Todos os estados</option>`+[...new Set(data.cidades.map(c=>c.uf).filter(Boolean))].sort().map(u=>`<option ${ufSalvo===u?"selected":""}>${esc(u)}</option>`).join("");
+    atualizarCidCampanha(alvo);
+  }
   if(kind==="cidades"){set("fCidade",o.cidade);set("fUf",o.uf);set("fBairros",(o.bairros||[]).join(", "));set("fStatus",o.status||"nao iniciada")}
   if(kind==="nichos"){set("fNome",o.nome);set("fObs",o.obs)}
   $("dlg").dataset.kind=kind;
@@ -424,7 +446,7 @@ $("btnSave").onclick=()=>{
     obj={nome,telefone:$("flTel").value.trim(),email:$("flEmail").value.trim(),cidade:$("flCidade").value.trim(),nicho:$("flNicho").value.trim(),site:$("flSite").value,status:$("flStatus").value,obs:$("flObs").value.trim()};
   }else if(kind==="campanhas"){
     const nome=$("fcNome").value.trim();if(!nome)return toast("Informe o nome da campanha");
-    obj={nome,nicho:$("fcNicho").value.trim(),cidades:$("fcCidades").value.split(",").map(s=>s.trim()).filter(Boolean),status:$("fcStatus").value,obs:$("fcObs").value.trim()};
+    obj={nome,nicho:$("fcNicho").value,cidades:[...$("fcCidades").selectedOptions].map(op=>op.value),status:$("fcStatus").value,obs:$("fcObs").value.trim()};
   }else if(kind==="cidades"){
     const nome=$("fCidade").value.trim();if(!nome)return toast("Informe a cidade");
     obj={cidade:nome,uf:$("fUf").value.trim().toUpperCase(),bairros:$("fBairros").value.split(",").map(s=>s.trim()).filter(Boolean),status:$("fStatus").value};
