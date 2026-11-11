@@ -241,11 +241,12 @@ try{
   if(saved&&Array.isArray(saved.cidades))data=saved;
 }catch(e){storageOk=false}
 let saveTimer=null;
+const API=location.protocol.startsWith("http")?"":"http://localhost:8642";
 function alertaPersistencia(){
   if($("warn").style.display==="block")return;
   $("warn").style.display="block";
 }
-fetch("/api/state").then(r=>r.json()).then(j=>{
+fetch(API+"/api/state").then(r=>r.json()).then(j=>{
   if(j&&Array.isArray(j.cidades)&&j.cidades.length){data=j;render()}
 }).catch(()=>{serverOk=false;alertaPersistencia()});
 let tab="dashboard",editIdx=null;
@@ -254,7 +255,7 @@ function save(){
   if(storageOk){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){storageOk=false}}
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
-    fetch("/api/state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+    fetch(API+"/api/state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
       .then(r=>r.json()).then(j=>{if(j&&Array.isArray(j.cidades)){data=j;stats()}}).catch(()=>{serverOk=false;alertaPersistencia()});
   },300);
 }
