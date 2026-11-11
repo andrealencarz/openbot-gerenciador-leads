@@ -69,10 +69,21 @@ dialog textarea{resize:vertical;min-height:56px}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--gz-green);color:#06281c;padding:10px 20px;border-radius:10px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9;font-size:.85rem;box-shadow:0 8px 30px rgba(0,0,0,.4)}
 .toast.show{opacity:1}
+/* dashboard */
+.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:14px}
+.dash .stat{padding:13px 15px}
+.dash-box{border-top:1px solid var(--gz-border);padding:16px 16px 18px}
+.dash-title{color:var(--gz-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:12px}
+.bar-row{display:grid;grid-template-columns:170px 1fr 40px;gap:10px;align-items:center;margin:7px 0}
+.bar{background:var(--gz-card2);border-radius:999px;height:9px;overflow:hidden}
+.bar-fill{background:linear-gradient(90deg,var(--gz-accent),#8b5cf6);height:100%;border-radius:999px;transition:width .3s}
+.bar-val{text-align:right;font-size:.8rem;color:var(--gz-text);font-weight:600}
+.bar-label{font-size:.8rem;color:var(--gz-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ===== mobile ===== */
 @media (max-width:720px){
   body{padding:14px 10px 40px}
   .stats{grid-template-columns:repeat(2,1fr)}
+  .bar-row{grid-template-columns:105px 1fr 34px}
   .tab{padding:8px 14px}
   /* tabela vira cards */
   table{min-width:0}
@@ -102,17 +113,9 @@ dialog textarea{resize:vertical;min-height:56px}
     </div>
   </div>
 
-  <div class="stats">
-    <div class="stat hi"><b id="stLeads">0</b><small>Leads</small></div>
-    <div class="stat"><b id="stSemSite">0</b><small>Sem site</small></div>
-    <div class="stat"><b id="stPropostas">0</b><small>Propostas</small></div>
-    <div class="stat"><b id="stReunioes">0</b><small>Reuniões</small></div>
-    <div class="stat"><b id="stCidades">0</b><small>Cidades</small></div>
-    <div class="stat"><b id="stCampanhas">0</b><small>Campanhas</small></div>
-  </div>
-
   <div class="tabs">
-    <div class="tab active" data-tab="leads">Leads</div>
+    <div class="tab active" data-tab="dashboard">Dashboard</div>
+    <div class="tab" data-tab="leads">Leads</div>
     <div class="tab" data-tab="campanhas">Campanhas</div>
     <div class="tab" data-tab="cidades">Cidades</div>
     <div class="tab" data-tab="nichos">Nichos</div>
@@ -126,7 +129,8 @@ dialog textarea{resize:vertical;min-height:56px}
   </div>
 
   <div class="panel">
-    <div class="tablewrap" id="tabelaLeads"></div>
+    <div id="tabelaDashboard"></div>
+    <div class="tablewrap" id="tabelaLeads" style="display:none"></div>
     <div class="tablewrap" id="tabelaCampanhas" style="display:none"></div>
     <div class="tablewrap" id="tabelaCidades" style="display:none"></div>
     <div class="tablewrap" id="tabelaNichos" style="display:none"></div>
@@ -238,7 +242,7 @@ let saveTimer=null;
 fetch("/api/state").then(r=>r.json()).then(j=>{
   if(j&&Array.isArray(j.cidades)&&j.cidades.length){data=j;render()}
 }).catch(()=>{});
-let tab="leads",editIdx=null;
+let tab="dashboard",editIdx=null;
 const $=id=>document.getElementById(id);
 function save(){
   if(storageOk){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){storageOk=false}}
@@ -251,12 +255,39 @@ function save(){
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2000)}
 function stats(){
-  $("stLeads").textContent=data.leads.length;
-  $("stSemSite").textContent=data.leads.filter(l=>l.site==="sem site").length;
-  $("stPropostas").textContent=data.leads.filter(l=>l.status==="proposta enviada").length;
-  $("stReunioes").textContent=data.leads.filter(l=>l.status==="reuniao marcada").length;
-  $("stCidades").textContent=data.cidades.length;
-  $("stCampanhas").textContent=data.campanhas.length;
+  const nLeads=data.leads.length;
+  const semSite=data.leads.filter(l=>l.site==="sem site").length;
+  const propostas=data.leads.filter(l=>l.status==="proposta enviada").length;
+  const reunioes=data.leads.filter(l=>l.status==="reuniao marcada").length;
+  const contatos=data.leads.filter(l=>l.status==="contato feito").length;
+  const fechados=data.leads.filter(l=>l.status==="fechado").length;
+  const perdidos=data.leads.filter(l=>l.status==="perdido").length;
+  const campAtivas=data.campanhas.filter(c=>c.status==="ativa").length;
+  $("tabelaDashboard").innerHTML=`
+  <div class="dash">
+    <div class="stat hi"><b>${nLeads}</b><small>Leads</small></div>
+    <div class="stat"><b>${semSite}</b><small>Sem site</small></div>
+    <div class="stat"><b>${contatos}</b><small>Contatos feitos</small></div>
+    <div class="stat"><b>${propostas}</b><small>Propostas enviadas</small></div>
+    <div class="stat"><b>${reunioes}</b><small>Reuniões marcadas</small></div>
+    <div class="stat"><b>${fechados}</b><small>Fechados</small></div>
+    <div class="stat"><b>${perdidos}</b><small>Perdidos</small></div>
+    <div class="stat"><b>${campAtivas}/${data.campanhas.length}</b><small>Campanhas ativas</small></div>
+    <div class="stat"><b>${data.cidades.length}</b><small>Cidades</small></div>
+    <div class="stat"><b>${data.nichos.length}</b><small>Nichos</small></div>
+  </div>
+  ${barras("Leads por status", STATUS_LEADS, s=>data.leads.filter(l=>l.status===s).length, nLeads)}
+  ${barras("Leads por nicho", data.nichos.map(n=>n.nome), s=>data.leads.filter(l=>l.nicho===s).length, nLeads, true)}
+  ${barras("Leads por cidade", [...new Set(data.leads.map(l=>l.cidade).filter(Boolean))].sort(), s=>data.leads.filter(l=>l.cidade===s).length, nLeads, true)}`;
+}
+function barras(titulo,itens,conta,total,compact){
+  if(!itens.length)return "";
+  const rows=itens.map(s=>{
+    const n=conta(s);
+    const pct=total?Math.round(n/total*100):0;
+    return `<div class="bar-row"><span class="bar-label">${esc(s)}</span><div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div><span class="bar-val">${n}</span></div>`;
+  }).join("");
+  return `<div class="dash-box"><div class="dash-title">${esc(titulo)}</div>${rows}</div>`;
 }
 function norm(s){return String(s==null?"":s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
 function optList(arr,v){return arr.map(s=>`<option ${v===s?"selected":""} value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join("")}
@@ -312,6 +343,8 @@ function paginar(lista){
 }
 window.mudarPag=d=>{pagina[tab]=Math.max(1,(pagina[tab]||1)+d);render()};
 function render(){
+  $("btnAdd").style.display=tab==="dashboard"?"none":"";
+  $("busca").style.display=tab==="dashboard"?"none":"";
   stats();
   $("dlCidades").innerHTML=data.cidades.map(c=>`<option value="${esc(c.cidade)}">`).join("");
   $("dlNichos").innerHTML=data.nichos.map(n=>`<option value="${esc(n.nome)}">`).join("");
@@ -424,8 +457,11 @@ $("filtroUf").onchange=()=>{pagina[tab]=1;render()};
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   t.classList.add("active");tab=t.dataset.tab;
-  ["tabelaLeads","tabelaCampanhas","tabelaCidades","tabelaNichos"].forEach(id=>$(id).style.display="none");
+  ["tabelaDashboard","tabelaLeads","tabelaCampanhas","tabelaCidades","tabelaNichos"].forEach(id=>$(id).style.display="none");
   $("tabela"+tab.charAt(0).toUpperCase()+tab.slice(1)).style.display="block";
+  $("btnAdd").style.display=tab==="dashboard"?"none":"";
+  $("busca").style.display=tab==="dashboard"?"none":"";
+  $("filtroStatus").style.display=tab==="dashboard"?"none":"";
   pagina[tab]=1;
   render();
 });
