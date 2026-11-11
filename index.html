@@ -42,18 +42,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--gz-accent);box-shadow
 input[type=search]{flex:1;min-width:180px}
 select{max-width:100%}
 .panel{background:var(--gz-card);border:1px solid var(--gz-border);border-radius:var(--radius);overflow:hidden}
-.tablewrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:640px}
-th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--gz-border);font-size:.87rem;vertical-align:middle}
-th{color:var(--gz-muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;background:var(--gz-card2);position:sticky;top:0}
-tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:rgba(91,124,250,.045)}
-td.actions{white-space:nowrap;text-align:right}
+.panel{background:var(--gz-card);border:1px solid var(--gz-border);border-radius:var(--gz-radius);overflow:hidden}
+.row{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--gz-border)}
+.row:last-of-type{border-bottom:none}
+.row:hover{background:rgba(91,124,250,.045)}
+.row-main{flex:1;min-width:0}
 .b{font-weight:600}
-.sub{display:block;color:var(--gz-muted);font-size:.76rem;margin-top:2px}
-.tag{display:inline-block;background:var(--gz-card2);border:1px solid var(--gz-border);border-radius:999px;padding:3px 10px;font-size:.74rem;margin:2px 3px 2px 0}
+.sub{display:block;color:var(--gz-muted);font-size:.76rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;max-width:42%}
+.row-side{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+.tag{display:inline-block;background:var(--gz-card2);border:1px solid var(--gz-border);border-radius:999px;padding:3px 10px;font-size:.74rem}
 .tag.sem{border-color:rgba(52,211,153,.4);color:var(--gz-green);background:rgba(52,211,153,.08)}
 .tag.com{border-color:rgba(251,191,36,.35);color:var(--gz-amber);background:rgba(251,191,36,.07)}
+select.status{padding:5px 9px;font-size:.78rem;border-radius:8px;font-weight:600;max-width:150px}
 select.status{padding:5px 9px;font-size:.78rem;border-radius:8px;font-weight:600;max-width:150px}
 .pager{display:flex;gap:10px;align-items:center;justify-content:center;padding:13px;flex-wrap:wrap;border-top:1px solid var(--gz-border)}
 .pager small{color:var(--gz-muted);font-size:.8rem}
@@ -85,16 +86,9 @@ dialog textarea{resize:vertical;min-height:56px}
   .stats{grid-template-columns:repeat(2,1fr)}
   .bar-row{grid-template-columns:105px 1fr 34px}
   .tab{padding:8px 14px}
-  /* tabela vira cards */
-  table{min-width:0}
-  .tablewrap table,thead,tbody,tr,td,th{display:block}
-  thead{display:none}
-  tbody tr{border-bottom:1px solid var(--gz-border);padding:10px 4px}
-  tbody tr:last-child{border-bottom:none}
-  td{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:5px 12px;border-bottom:none}
-  td::before{content:attr(data-l);color:var(--gz-muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;flex-shrink:0}
-  td.actions::before{content:''}
-  td.actions{padding:8px 12px;justify-content:flex-end}
+  .row{flex-wrap:wrap;gap:8px}
+  .row-meta{order:3;width:100%;max-width:none;padding-left:2px}
+  .row-side{width:100%;justify-content:flex-start;margin-left:0}
   .grid2{grid-template-columns:1fr}
 }
 </style>
@@ -130,10 +124,10 @@ dialog textarea{resize:vertical;min-height:56px}
 
   <div class="panel">
     <div id="tabelaDashboard"></div>
-    <div class="tablewrap" id="tabelaLeads" style="display:none"></div>
-    <div class="tablewrap" id="tabelaCampanhas" style="display:none"></div>
-    <div class="tablewrap" id="tabelaCidades" style="display:none"></div>
-    <div class="tablewrap" id="tabelaNichos" style="display:none"></div>
+    <div id="tabelaLeads" style="display:none"></div>
+    <div id="tabelaCampanhas" style="display:none"></div>
+    <div id="tabelaCidades" style="display:none"></div>
+    <div id="tabelaNichos" style="display:none"></div>
   </div>
 </div>
 
@@ -358,31 +352,25 @@ function render(){
     if(fs&&l.status!==fs)return "";
     if(fCid&&norm(l.cidade||"")!==norm(fCid))return "";
     if(fUf&&norm(ufDe(l.cidade))!==norm(fUf))return "";
-    return `<tr>
-    <td data-l="Lead"><span class="b">${esc(l.nome)}</span><span class="sub">${esc(l.telefone||"")}${l.telefone&&l.email?" · ":""}${esc(l.email||"")}</span></td>
-    <td data-l="Cidade / Nicho">${esc(l.cidade||"—")||'<span style="color:var(--gz-muted)">—</span>'}<span class="sub">${esc(l.nicho||"")}</span></td>
-    <td data-l="Site">${tagSite(l.site)}</td>
-    <td data-l="Status"><select class="status" onchange="chStatus('leads',${i},this.value)">${optList(STATUS_LEADS,l.status)}</select></td>
-    <td data-l="Obs.">${esc(l.obs||"")||'<span style="color:var(--gz-muted)">—</span>'}</td>
-    <td class="actions"><button class="btn-edit" onclick="edit('leads',${i})">✏️</button><button class="btn-danger" onclick="del('leads',${i})">🗑️</button></td></tr>`;
+    return `<div class="row">
+    <div class="row-main"><span class="b">${esc(l.nome)}</span><span class="sub">${esc(l.telefone||"")}${l.telefone&&l.email?" · ":""}${esc(l.email||"")}${l.obs?" · "+esc(l.obs):""}</span></div>
+    <div class="row-meta"><span class="tag">${esc(l.cidade||"—")}</span>${l.nicho?`<span class="tag">${esc(l.nicho)}</span>`:""}${tagSite(l.site)}</div>
+    <div class="row-side"><select class="status" onchange="chStatus('leads',${i},this.value)">${optList(STATUS_LEADS,l.status)}</select><button class="btn-edit" onclick="edit('leads',${i})">✏️</button><button class="btn-danger" onclick="del('leads',${i})">🗑️</button></div></div>`;
   }).filter(Boolean);
   const lPag=paginar(lsRows);
-  $("tabelaLeads").innerHTML=(lPag.fatia.length?`<table><thead><tr><th>Lead</th><th>Cidade / Nicho</th><th>Site</th><th>Status</th><th>Obs.</th><th></th></tr></thead><tbody>${lPag.fatia.join("")}</tbody></table>`:`<div class="empty"><span class="ico">📭</span>Nenhum lead — toque em <b>+ Adicionar</b> para cadastrar o primeiro.</div>`)+lPag.ctrl;
+  $("tabelaLeads").innerHTML=(lPag.fatia.length?`${lPag.fatia.join("")}`:`<div class="empty"><span class="ico">📭</span>Nenhum lead — toque em <b>+ Adicionar</b> para cadastrar o primeiro.</div>`)+lPag.ctrl;
 
   const cmsRows=data.campanhas.map((x,i)=>{
     const hay=norm([x.nome,x.nicho,(x.cidades||[]).join(" "),x.status,x.obs].join(" "));
     if(!hay.includes(q))return "";
     if(fs&&x.status!==fs)return "";
-    return `<tr>
-    <td data-l="Campanha"><span class="b">${esc(x.nome)}</span></td>
-    <td data-l="Nicho">${esc(x.nicho||"")||'<span style="color:var(--gz-muted)">—</span>'}</td>
-    <td data-l="Cidades">${(x.cidades||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join("")||'<span style="color:var(--gz-muted)">—</span>'}</td>
-    <td data-l="Status"><select class="status" onchange="chStatus('campanhas',${i},this.value)">${optList(STATUS_CAMP,x.status)}</select></td>
-    <td data-l="Obs.">${esc(x.obs||"")||'<span style="color:var(--gz-muted)">—</span>'}</td>
-    <td class="actions"><button class="btn-edit" onclick="edit('campanhas',${i})">✏️</button><button class="btn-danger" onclick="del('campanhas',${i})">🗑️</button></td></tr>`;
+    return `<div class="row">
+    <div class="row-main"><span class="b">${esc(x.nome)}</span><span class="sub">${esc(x.nicho||"")}${x.obs?" · "+esc(x.obs):""}</span></div>
+    <div class="row-meta">${(x.cidades||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join("")||""}</div>
+    <div class="row-side"><select class="status" onchange="chStatus('campanhas',${i},this.value)">${optList(STATUS_CAMP,x.status)}</select><button class="btn-edit" onclick="edit('campanhas',${i})">✏️</button><button class="btn-danger" onclick="del('campanhas',${i})">🗑️</button></div></div>`;
   }).filter(Boolean);
   const cPag=paginar(cmsRows);
-  $("tabelaCampanhas").innerHTML=(cPag.fatia.length?`<table><thead><tr><th>Campanha</th><th>Nicho</th><th>Cidades</th><th>Status</th><th>Obs.</th><th></th></tr></thead><tbody>${cPag.fatia.join("")}</tbody></table>`:`<div class="empty"><span class="ico">📣</span>Nenhuma campanha ainda.</div>`)+cPag.ctrl;
+  $("tabelaCampanhas").innerHTML=(cPag.fatia.length?`${cPag.fatia.join("")}`:`<div class="empty"><span class="ico">📣</span>Nenhuma campanha ainda.</div>`)+cPag.ctrl;
 
   const csRows=data.cidades.map((c,i)=>{
     const hay=norm(c.cidade+" "+c.uf+" "+c.bairros.join(" "));
@@ -390,26 +378,23 @@ function render(){
     if(fs&&c.status!==fs)return "";
     if(fCid&&norm(c.cidade)!==norm(fCid))return "";
     if(fUf&&norm(c.uf)!==norm(fUf))return "";
-    return `<tr>
-    <td data-l="Cidade"><span class="b">${esc(c.cidade)}</span></td>
-    <td data-l="UF">${esc(c.uf)||'<span style="color:var(--gz-muted)">—</span>'}</td>
-    <td data-l="Bairros">${c.bairros.length?c.bairros.map(b=>`<span class="tag">${esc(b)}</span>`).join(""):'<span style="color:var(--gz-muted)">—</span>'}</td>
-    <td data-l="Status"><select class="status" onchange="chStatus('cidades',${i},this.value)">${optList(STATUS_CIDADE,c.status)}</select></td>
-    <td class="actions"><button class="btn-edit" onclick="edit('cidades',${i})">✏️</button><button class="btn-danger" onclick="del('cidades',${i})">🗑️</button></td></tr>`;
+    return `<div class="row">
+    <div class="row-main"><span class="b">${esc(c.cidade)}</span><span class="sub">${esc(c.uf||"")}</span></div>
+    <div class="row-meta">${c.bairros.slice(0,4).map(b=>`<span class="tag">${esc(b)}</span>`).join("")}${c.bairros.length>4?`<span class="tag">+${c.bairros.length-4}</span>`:""}</div>
+    <div class="row-side"><select class="status" onchange="chStatus('cidades',${i},this.value)">${optList(STATUS_CIDADE,c.status)}</select><button class="btn-edit" onclick="edit('cidades',${i})">✏️</button><button class="btn-danger" onclick="del('cidades',${i})">🗑️</button></div></div>`;
   }).filter(Boolean);
   const cidPag=paginar(csRows);
-  $("tabelaCidades").innerHTML=(cidPag.fatia.length?`<table><thead><tr><th>Cidade</th><th>UF</th><th>Bairros</th><th>Status</th><th></th></tr></thead><tbody>${cidPag.fatia.join("")}</tbody></table>`:`<div class="empty"><span class="ico">🗺️</span>Nenhuma cidade encontrada.</div>`)+cidPag.ctrl;
+  $("tabelaCidades").innerHTML=(cidPag.fatia.length?`${cidPag.fatia.join("")}`:`<div class="empty"><span class="ico">🗺️</span>Nenhuma cidade encontrada.</div>`)+cidPag.ctrl;
 
   const nsRows=data.nichos.map((n,i)=>{
     const hay=norm(n.nome+" "+(n.obs||""));
     if(!hay.includes(q))return "";
-    return `<tr>
-    <td data-l="Nicho"><span class="b">${esc(n.nome)}</span></td>
-    <td data-l="Observações">${esc(n.obs||"")||'<span style="color:var(--gz-muted)">—</span>'}</td>
-    <td class="actions"><button class="btn-edit" onclick="edit('nichos',${i})">✏️</button><button class="btn-danger" onclick="del('nichos',${i})">🗑️</button></td></tr>`;
+    return `<div class="row">
+    <div class="row-main"><span class="b">${esc(n.nome)}</span><span class="sub">${esc(n.obs||"")}</span></div>
+    <div class="row-side"><button class="btn-edit" onclick="edit('nichos',${i})">✏️</button><button class="btn-danger" onclick="del('nichos',${i})">🗑️</button></div></div>`;
   }).filter(Boolean);
   const nPag=paginar(nsRows);
-  $("tabelaNichos").innerHTML=(nPag.fatia.length?`<table><thead><tr><th>Nicho</th><th>Observações</th><th></th></tr></thead><tbody>${nPag.fatia.join("")}</tbody></table>`:`<div class="empty"><span class="ico">🏷️</span>Nenhum nicho encontrado.</div>`)+nPag.ctrl;
+  $("tabelaNichos").innerHTML=(nPag.fatia.length?`${nPag.fatia.join("")}`:`<div class="empty"><span class="ico">🏷️</span>Nenhum nicho encontrado.</div>`)+nPag.ctrl;
 }
 window.chStatus=(tab,i,v)=>{data[tab][i].status=v;save();stats();toast("Status atualizado")};
 const PANES={leads:"dlgLead",campanhas:"dlgCampanha",cidades:"dlgCidade",nichos:"dlgNicho"};
