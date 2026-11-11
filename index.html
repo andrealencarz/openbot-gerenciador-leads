@@ -13,7 +13,7 @@
 html{font-size:16px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:radial-gradient(1200px 500px at 80% -10%,rgba(91,124,250,.08),transparent),var(--gz-bg);color:var(--gz-text);min-height:100vh;padding:20px 16px 48px}
-.wrap{max-width:1160px;margin:0 auto}
+.wrap{max-width:1600px;margin:0 auto}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px}
 .brand{display:flex;align-items:center;gap:12px}
 .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--gz-accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
@@ -70,8 +70,15 @@ dialog textarea{resize:vertical;min-height:56px}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--gz-green);color:#06281c;padding:10px 20px;border-radius:10px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9;font-size:.85rem;box-shadow:0 8px 30px rgba(0,0,0,.4)}
 .toast.show{opacity:1}
 /* dashboard */
-.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:14px}
+.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:14px}
 .dash .stat{padding:13px 15px}
+.dash-charts{display:grid;gap:0 24px}
+.dash-charts .dash-box{min-width:0}
+@media (min-width:1100px){
+  .dash{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .dash-charts{grid-template-columns:1fr 1fr;padding:0 8px}
+  .dash-charts .dash-box:nth-child(3){grid-column:1/-1}
+}
 .dash-box{border-top:1px solid var(--gz-border);padding:16px 16px 18px}
 .dash-title{color:var(--gz-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:12px}
 .bar-row{display:grid;grid-template-columns:170px 1fr 40px;gap:10px;align-items:center;margin:7px 0}
@@ -80,6 +87,9 @@ dialog textarea{resize:vertical;min-height:56px}
 .bar-val{text-align:right;font-size:.8rem;color:var(--gz-text);font-weight:600}
 .bar-label{font-size:.8rem;color:var(--gz-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ===== responsivo: fontes crescem em telas menores ===== */
+@media (min-width:1600px){
+  html{font-size:17px}
+}
 @media (max-width:900px){
   html{font-size:16.5px}
   .dash{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
@@ -311,9 +321,11 @@ function stats(){
     <div class="stat"><b>${data.cidades.length}</b><small>Cidades</small></div>
     <div class="stat"><b>${data.nichos.length}</b><small>Nichos</small></div>
   </div>
+  <div class="dash-charts">
   ${barras("Leads por status", STATUS_LEADS, s=>data.leads.filter(l=>l.status===s).length, nLeads)}
   ${barras("Leads por nicho", data.nichos.map(n=>n.nome), s=>data.leads.filter(l=>l.nicho===s).length, nLeads, true)}
-  ${barras("Leads por cidade", [...new Set(data.leads.map(l=>l.cidade).filter(Boolean))].sort(), s=>data.leads.filter(l=>l.cidade===s).length, nLeads, true)}`;
+  ${barras("Leads por cidade", [...new Set(data.leads.map(l=>l.cidade).filter(Boolean))].sort(), s=>data.leads.filter(l=>l.cidade===s).length, nLeads, true)}
+  </div>`;
 }
 function barras(titulo,itens,conta,total,compact){
   if(!itens.length)return "";
