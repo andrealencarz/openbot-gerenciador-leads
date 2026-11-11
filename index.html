@@ -766,6 +766,9 @@ dialog textarea{resize:vertical;min-height:72px;line-height:1.5}
         <div><label>Nicho</label><select id="fcNicho"></select></div>
         <div><label>Estado (filtra cidades)</label><select id="fcUfFiltro"></select></div>
       </div>
+      <label>Bairro / região (opcional)</label>
+      <input id="fcBairro" placeholder="Ex.: Moema" autocomplete="off">
+      <span class="field-hint">Texto livre. Entra na busca do Google Maps como “nicho em bairro, cidade” — deixe vazio para buscar na cidade inteira.</span>
       <label>Cidades-alvo</label>
       <div class="picker" id="fcCidPicker">
         <div class="picker-head">
@@ -1243,7 +1246,7 @@ function render(){
   $("tabelaLeads").innerHTML=(lPag.fatia.length?`<div class="list-head"><span>Lead / Contato</span><span>Cidade · Nicho · Status</span></div>${lPag.fatia.join("")}`:`<div class="empty"><div class="ico">📭</div><h3>Nenhum lead encontrado</h3><p>Cadastre empresas sem site encontradas no Google Maps para iniciar o acompanhamento.</p><button class="btn-primary" onclick="document.getElementById('btnAdd').click()">+ Cadastrar primeiro lead</button></div>`)+lPag.ctrl;
 
   const cmsRows=data.campanhas.map((x,i)=>{
-    const hay=norm([x.nome,x.nicho,(x.cidades||[]).join(" "),x.status,x.obs].join(" "));
+    const hay=norm([x.nome,x.nicho,x.bairro,(x.cidades||[]).join(" "),x.status,x.obs].join(" "));
     if(!hay.includes(q))return "";
     if(fs&&x.status!==fs)return "";
     const st=x.status||"planejada";
@@ -1254,7 +1257,7 @@ function render(){
         <div class="row-title"><span class="b">${esc(x.nome)}</span></div>
         <div class="sub">${esc(x.nicho||"Sem nicho definido")}${x.obs?" · "+esc(x.obs):""}</div>
       </div>
-      <div class="row-meta">${cids.slice(0,5).map(c=>`<span class="tag">📍 ${esc(c)}</span>`).join("")}${cids.length>5?`<span class="tag">+${cids.length-5}</span>`:""}</div>
+      <div class="row-meta">${x.bairro?`<span class="tag">🏘 ${esc(x.bairro)}</span>`:""}${cids.slice(0,5).map(c=>`<span class="tag">📍 ${esc(c)}</span>`).join("")}${cids.length>5?`<span class="tag">+${cids.length-5}</span>`:""}</div>
       <div class="row-side">
         <select class="status" data-st="${esc(st)}" onchange="chStatus('campanhas',${i},this.value)">${optList(STATUS_CAMP,st)}</select>
         <button class="btn-icon" title="Editar" onclick="edit('campanhas',${i})">✏️</button>
@@ -1326,7 +1329,7 @@ function abrir(kind,title,o){
   const set=(id,v)=>{const el=$(id);if(el)el.value=v||""};
   if(kind==="leads"){set("flNome",o.nome);set("flTel",o.telefone);set("flEmail",o.email);set("flCidade",o.cidade);set("flNicho",o.nicho);set("flSite",o.site||"sem site");set("flStatus",o.status||"novo");set("flObs",o.obs)}
   if(kind==="campanhas"){
-    set("fcNome",o.nome);set("fcStatus",o.status||"planejada");set("fcObs",o.obs);
+    set("fcNome",o.nome);set("fcStatus",o.status||"planejada");set("fcObs",o.obs);set("fcBairro",o.bairro);
     $("fcNicho").innerHTML=`<option value="">—</option>`+data.nichos.map(n=>`<option value="${esc(n.nome)}" ${o.nicho===n.nome?"selected":""}>${esc(n.nome)}</option>`).join("")+(o.nicho&&!data.nichos.some(n=>n.nome===o.nicho)?`<option value="${esc(o.nicho)}" selected>${esc(o.nicho)}</option>`:"");
     const alvo=o.cidades||[];
     const ufSalvo=alvo.length?ufDe(alvo[0]):"";
@@ -1354,7 +1357,7 @@ $("btnSave").onclick=()=>{
     obj={nome,telefone:$("flTel").value.trim(),email:$("flEmail").value.trim(),cidade:$("flCidade").value.trim(),nicho:$("flNicho").value.trim(),site:$("flSite").value,status:$("flStatus").value,obs:$("flObs").value.trim()};
   }else if(kind==="campanhas"){
     const nome=$("fcNome").value.trim();if(!nome)return toast("Informe o nome da campanha");
-    obj={nome,nicho:$("fcNicho").value,cidades:[...$("fcCidades").selectedOptions].map(op=>op.value),status:$("fcStatus").value,obs:$("fcObs").value.trim()};
+    obj={nome,nicho:$("fcNicho").value,bairro:$("fcBairro").value.trim(),cidades:[...$("fcCidades").selectedOptions].map(op=>op.value),status:$("fcStatus").value,obs:$("fcObs").value.trim()};
   }else if(kind==="cidades"){
     const nome=$("fCidade").value.trim();if(!nome)return toast("Informe a cidade");
     obj={cidade:nome,uf:$("fUf").value.trim().toUpperCase(),bairros:$("fBairros").value.split(",").map(s=>s.trim()).filter(Boolean),status:$("fStatus").value};

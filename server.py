@@ -10,7 +10,7 @@ TABLES = {
     "cidades":   (["cidade", "uf", "status"], ["bairros"]),
     "nichos":    (["nome", "obs"], []),
     "leads":     (["nome", "telefone", "email", "cidade", "nicho", "site", "status", "obs"], []),
-    "campanhas": (["nome", "nicho", "status", "obs"], ["cidades"]),
+    "campanhas": (["nome", "nicho", "bairro", "status", "obs"], ["cidades"]),
 }
 
 def db():
@@ -18,6 +18,12 @@ def db():
     for t, (cols, _) in TABLES.items():
         c.execute("CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, %s)" %
                   (t, ", ".join("%s TEXT" % c2 for c2 in cols)))
+        # migração: adiciona colunas novas em bancos já existentes
+        atuais = {r[1] for r in c.execute("PRAGMA table_info(%s)" % t)}
+        for col in cols + TABLES[t][1]:
+            if col not in atuais:
+                c.execute("ALTER TABLE %s ADD COLUMN %s TEXT" % (t, col))
+    c.commit()
     return c
 
 def load(c):
