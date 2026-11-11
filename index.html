@@ -8,8 +8,9 @@
 :root{
   --gz-bg:#0b0d13;--gz-card:#141824;--gz-card2:#1b2030;--gz-border:#262c3f;
   --gz-text:#e9ecf4;--gz-muted:#8f96ab;--gz-accent:#5b7cfa;--gz-accent-soft:rgba(91,124,250,.14);
-  --gz-green:#34d399;--gz-amber:#fbbf24;--gz-red:#f87171;--radius:14px;--radius-sm:10px;
+  --gz-green:#34d399;--gz-amber:#fbbf24;--gz-red:#f87171;--radius:14px;--gz-radius:14px;--radius-sm:10px;
 }
+html{font-size:16px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:radial-gradient(1200px 500px at 80% -10%,rgba(91,124,250,.08),transparent),var(--gz-bg);color:var(--gz-text);min-height:100vh;padding:20px 16px 48px}
 .wrap{max-width:1160px;margin:0 auto}
@@ -42,20 +43,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--gz-accent);box-shadow
 input[type=search]{flex:1;min-width:180px}
 select{max-width:100%}
 .panel{background:var(--gz-card);border:1px solid var(--gz-border);border-radius:var(--radius);overflow:hidden}
-.panel{background:var(--gz-card);border:1px solid var(--gz-border);border-radius:var(--gz-radius);overflow:hidden}
 .row{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--gz-border)}
 .row:last-of-type{border-bottom:none}
 .row:hover{background:rgba(91,124,250,.045)}
 .row-main{flex:1;min-width:0}
 .b{font-weight:600}
-.sub{display:block;color:var(--gz-muted);font-size:.76rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{display:block;color:var(--gz-muted);font-size:.82rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;max-width:42%}
 .row-side{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
-.tag{display:inline-block;background:var(--gz-card2);border:1px solid var(--gz-border);border-radius:999px;padding:3px 10px;font-size:.74rem}
+.tag{display:inline-block;background:var(--gz-card2);border:1px solid var(--gz-border);border-radius:999px;padding:4px 11px;font-size:.8rem}
 .tag.sem{border-color:rgba(52,211,153,.4);color:var(--gz-green);background:rgba(52,211,153,.08)}
 .tag.com{border-color:rgba(251,191,36,.35);color:var(--gz-amber);background:rgba(251,191,36,.07)}
-select.status{padding:5px 9px;font-size:.78rem;border-radius:8px;font-weight:600;max-width:150px}
-select.status{padding:5px 9px;font-size:.78rem;border-radius:8px;font-weight:600;max-width:150px}
+select.status{padding:6px 10px;font-size:.82rem;border-radius:8px;font-weight:600;max-width:150px}
 .pager{display:flex;gap:10px;align-items:center;justify-content:center;padding:13px;flex-wrap:wrap;border-top:1px solid var(--gz-border)}
 .pager small{color:var(--gz-muted);font-size:.8rem}
 .empty{padding:48px 20px;text-align:center;color:var(--gz-muted)}
@@ -63,7 +62,7 @@ select.status{padding:5px 9px;font-size:.78rem;border-radius:8px;font-weight:600
 dialog{background:var(--gz-card);color:var(--gz-text);border:1px solid var(--gz-border);border-radius:var(--radius);padding:22px;max-width:460px;width:min(92vw,460px)}
 dialog::backdrop{background:rgba(5,7,12,.7);backdrop-filter:blur(2px)}
 dialog h2{font-size:1.02rem;margin-bottom:4px}
-label{display:block;font-size:.72rem;color:var(--gz-muted);margin:12px 0 4px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+label{display:block;font-size:.78rem;color:var(--gz-muted);margin:12px 0 4px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 dialog input,dialog textarea,dialog select{width:100%}
 dialog textarea{resize:vertical;min-height:56px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
@@ -80,16 +79,42 @@ dialog textarea{resize:vertical;min-height:56px}
 .bar-fill{background:linear-gradient(90deg,var(--gz-accent),#8b5cf6);height:100%;border-radius:999px;transition:width .3s}
 .bar-val{text-align:right;font-size:.8rem;color:var(--gz-text);font-weight:600}
 .bar-label{font-size:.8rem;color:var(--gz-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* ===== mobile ===== */
+/* ===== responsivo: fontes crescem em telas menores ===== */
+@media (max-width:900px){
+  html{font-size:17px}
+  .dash{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+}
 @media (max-width:720px){
-  body{padding:14px 10px 40px}
+  html{font-size:18px}
+  body{padding:14px 12px 44px}
+  .brand h1{font-size:1.3rem}
+  .brand small{font-size:.82rem}
   .stats{grid-template-columns:repeat(2,1fr)}
-  .bar-row{grid-template-columns:105px 1fr 34px}
-  .tab{padding:8px 14px}
-  .row{flex-wrap:wrap;gap:8px}
-  .row-meta{order:3;width:100%;max-width:none;padding-left:2px}
-  .row-side{width:100%;justify-content:flex-start;margin-left:0}
+  .dash{grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}
+  .dash .stat{padding:12px}
+  .bar-row{grid-template-columns:1fr auto;gap:6px 10px}
+  .bar-label{grid-column:1/-1;font-size:.88rem}
+  .tab{padding:10px 16px;font-size:.9rem}
+  .tabs{width:100%;flex-wrap:wrap;justify-content:center;overflow-x:visible}
+  /* filtros ocupam a largura toda e viram alvos de toque confortáveis */
+  .filters{gap:8px}
+  .filters input,.filters select{width:100%;min-width:0!important;min-height:44px;font-size:.95rem}
+  input,select,textarea{min-height:44px;font-size:.95rem}
+  button{padding:11px 16px;font-size:.92rem}
+  .actions{width:100%}
+  .actions button{flex:1}
+  .row{flex-wrap:wrap;padding:14px 15px;gap:8px}
+  .row-main{flex:1 1 100%}
+  .b{font-size:1.02rem}
+  .sub{font-size:.86rem;white-space:normal}
+  .row-meta{order:3;width:100%;max-width:none;padding-left:0}
+  .tag{font-size:.82rem;padding:5px 12px}
+  .row-side{width:100%;justify-content:space-between;margin-left:0;gap:10px}
+  select.status{max-width:none;flex:1;min-height:40px;font-size:.88rem}
+  .btn-edit,.btn-danger{padding:9px 12px;font-size:1rem}
   .grid2{grid-template-columns:1fr}
+  .pager small{font-size:.85rem}
+  dialog{padding:18px;width:min(96vw,460px)}
 }
 </style>
 </head>
