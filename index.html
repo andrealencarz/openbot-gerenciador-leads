@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciador de Cidades & Nichos</title>
+<style>
+:root{
+  --bg:#0f1117;--card:#171a23;--card2:#1e2230;--border:#2a2f3f;
+  --text:#e8eaf0;--muted:#8b91a5;--accent:#4f7cff;--accent2:#22c55e;
+  --danger:#ef4444;--radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px}
+.container{max-width:1100px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+h1{font-size:1.5rem;font-weight:700}
+h1 span{color:var(--accent)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;border:none;border-radius:var(--radius);padding:10px 16px;cursor:pointer;font-weight:600;transition:filter .15s}
+button:hover{filter:brightness(1.15)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-ghost{background:var(--card2);color:var(--text)}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.stats{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;min-width:140px}
+.stat b{display:block;font-size:1.4rem;color:var(--accent)}
+.stat small{color:var(--muted)}
+.searchbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+input,select{font:inherit;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);outline:none;min-width:0}
+input:focus,select:focus{border-color:var(--accent)}
+input[type=search]{flex:1;min-width:200px}
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content}
+.tab{padding:8px 20px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600;background:transparent}
+.tab.active{background:var(--accent);color:#fff}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:.92rem;vertical-align:top}
+th{background:var(--card2);color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(79,124,255,.05)}
+td.actions{white-space:nowrap;text-align:right}
+.actions button{padding:6px 12px;font-size:.8rem;border-radius:8px;margin-left:4px}
+.tag{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:.78rem;margin:2px 3px 2px 0}
+select.status{padding:4px 8px;font-size:.82rem;border-radius:8px}
+select.status.nao{color:var(--muted)}
+select.status.andamento{color:#f59e0b}
+select.status.feito{color:var(--accent2)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+dialog{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:480px;width:92%}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog h2{font-size:1.1rem;margin-bottom:16px}
+label{display:block;font-size:.8rem;color:var(--muted);margin:12px 0 4px;font-weight:600}
+dialog input,dialog textarea{width:100%}
+dialog textarea{resize:vertical;min-height:70px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#fff;padding:10px 20px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🗺️ Gerenciador de <span>Cidades & Nichos</span></h1>
+    <div class="toolbar">
+      <button class="btn-ghost" id="btnExport">⬇️ Exportar JSON</button>
+      <button class="btn-ghost" id="btnImport">⬆️ Importar</button>
+      <button class="btn-primary" id="btnAdd">+ Adicionar</button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="stCidades">0</b><small>Cidades</small></div>
+    <div class="stat"><b id="stBairros">0</b><small>Bairros</small></div>
+    <div class="stat"><b id="stNichos">0</b><small>Nichos</small></div>
+    <div class="stat"><b id="stPendentes">0</b><small>Não iniciadas</small></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="cidades">Cidades & Bairros</div>
+    <div class="tab" data-tab="nichos">Nichos</div>
+  </div>
+
+  <div class="searchbar">
+    <input type="search" id="busca" placeholder="🔍 Buscar por cidade, UF ou bairro…">
+  </div>
+
+  <div id="tabelaCidades"></div>
+  <div id="tabelaNichos" style="display:none"></div>
+</div>
+
+<dialog id="dlg">
+  <h2 id="dlgTitle">Adicionar</h2>
+  <div id="dlgCidade">
+    <label>Cidade *</label><input id="fCidade" placeholder="Ex.: Fortaleza">
+    <label>UF</label><input id="fUf" placeholder="Ex.: CE" maxlength="2" style="text-transform:uppercase">
+    <label>Bairros (separados por vírgula)</label><textarea id="fBairros" placeholder="Ex.: Meireles, Aldeota, Papicu"></textarea>
+    <label>Status</label>
+    <select id="fStatus"><option value="nao iniciada">Não iniciada</option><option value="em andamento">Em andamento</option><option value="prospectada">Prospectada</option></select>
+  </div>
+  <div id="dlgNicho" style="display:none">
+    <label>Nicho *</label><input id="fNome" placeholder="Ex.: Clínicas odontológicas">
+    <label>Observações</label><textarea id="fObs" placeholder="Termos de busca, variações…"></textarea>
+  </div>
+  <div class="form-actions">
+    <button class="btn-ghost" id="btnCancel">Cancelar</button>
+    <button class="btn-primary" id="btnSave">Salvar</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileImport" accept=".json" style="display:none">
+
+<script>
+const SEED_CIDADES=[
+ {cidade:"São Paulo",uf:"SP",bairros:["Moema","Jardins","Itaim Bibi","Pinheiros","Vila Mariana","Paulista"],status:"nao iniciada"},
+ {cidade:"Rio de Janeiro",uf:"RJ",bairros:["Copacabana","Ipanema","Barra da Tijuca","Botafogo","Tijuca"],status:"nao iniciada"},
+ {cidade:"Brasília",uf:"DF",bairros:["Asa Sul","Asa Norte","Águas Claras","Lago Sul"],status:"nao iniciada"},
+ {cidade:"Fortaleza",uf:"CE",bairros:["Meireles","Aldeota","Papicu","Varjota"],status:"nao iniciada"},
+ {cidade:"Salvador",uf:"BA",bairros:["Barra","Pituba","Itapuã","Patamares"],status:"nao iniciada"},
+ {cidade:"Belo Horizonte",uf:"MG",bairros:["Savassi","Funcionários","Buritis","Santa Mônica"],status:"nao iniciada"},
+ {cidade:"Manaus",uf:"AM",bairros:["Adrianópolis","Ponta Negra","Vieiralves"],status:"nao iniciada"},
+ {cidade:"Curitiba",uf:"PR",bairros:["Batel","Água Verde","Bacacheri","Champagnat"],status:"nao iniciada"},
+ {cidade:"Recife",uf:"PE",bairros:["Boa Viagem","Espinheiro","Pina"],status:"nao iniciada"},
+ {cidade:"Goiânia",uf:"GO",bairros:["Setor Marista","Bueno","Jardim Goiás","Campinas"],status:"nao iniciada"},
+ {cidade:"Belém",uf:"PA",bairros:["Nazaré","Batista Campos","Marco"],status:"nao iniciada"},
+ {cidade:"Porto Alegre",uf:"RS",bairros:["Moinhos de Vento","Bela Vista","Ipanema"],status:"nao iniciada"},
+ {cidade:"Campinas",uf:"SP",bairros:["Cambuí","Taquaral","Nova Campinas"],status:"nao iniciada"},
+ {cidade:"Natal",uf:"RN",bairros:["Ponta Negra","Lagoa Nova","Capim Macio"],status:"nao iniciada"},
+ {cidade:"Teresina",uf:"PI",bairros:["Centro","Jockey","Piçarra","Marilos"],status:"nao iniciada"},
+ {cidade:"João Pessoa",uf:"PB",bairros:["Manaíra","Cabo Branco","Tambaú"],status:"nao iniciada"},
+ {cidade:"Maceió",uf:"AL",bairros:["Ponta Verde","Jatiúca","Maceió Parque"],status:"nao iniciada"},
+ {cidade:"Campo Grande",uf:"MS",bairros:["Amambaí","Carandá Bosque","Bairro Universitário"],status:"nao iniciada"},
+ {cidade:"São Luís",uf:"MA",bairros:["Pontas Negras","Jardim Renascença","Calhau"],status:"nao iniciada"},
+ {cidade:"Guarulhos",uf:"SP",bairros:["Centro","Jardim Zaira","Bom Clima"],status:"nao iniciada"}
+];
+const SEED_NICHOS=[
+ {nome:"Clínicas odontológicas",obs:"Clínica odontológica, dentista, ortodontia"},
+ {nome:"Restaurantes",obs:"Restaurante, pizzaria, hamburgueria"},
+ {nome:"Academias",obs:"Academia, crossfit, pilates"},
+ {nome:"Pet shops",obs:"Pet shop, clínica veterinária, banho e tosa"},
+ {nome:"Clínicas estéticas",obs:"Clínica de estética, depilação, esteticista"}
+];
+const KEY="gerenciador_cidades_nichos_v1";
+let storageOk=true;
+let data={cidades:structuredClone(SEED_CIDADES),nichos:structuredClone(SEED_NICHOS)};
+try{
+  const saved=JSON.parse(localStorage.getItem(KEY)||"null");
+  if(saved&&Array.isArray(saved.cidades))data=saved;
+}catch(e){storageOk=false}
+let saveTimer=null;
+fetch("/api/state").then(r=>r.json()).then(j=>{
+  if(j&&Array.isArray(j.cidades)&&j.cidades.length){data=j;render()}
+}).catch(()=>{});
+let tab="cidades",editCidade=null,editNicho=null;
+const $=id=>document.getElementById(id);
+function save(){
+  if(storageOk){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){storageOk=false}}
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    fetch("/api/state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+      .then(r=>r.json()).then(j=>{if(j&&Array.isArray(j.cidades)){data=j;stats()}}).catch(()=>{});
+  },300);
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2000)}
+function stats(){
+  $("stCidades").textContent=data.cidades.length;
+  $("stBairros").textContent=data.cidades.reduce((a,c)=>a+c.bairros.length,0);
+  $("stNichos").textContent=data.nichos.length;
+  $("stPendentes").textContent=data.cidades.filter(c=>c.status==="nao iniciada").length;
+}
+function norm(s){return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function render(){
+  const q=norm($("busca").value.trim());
+  stats();
+  const cs=data.cidades.filter(c=>{
+    const hay=norm(c.cidade+" "+c.uf+" "+c.bairros.join(" "));
+    return hay.includes(q);
+  }).map((c)=>{
+    const i=data.cidades.indexOf(c);
+    const bs=c.bairros.length?c.bairros.map(esc).map(b=>`<span class="tag">${b}</span>`).join(""):`<span style="color:var(--muted)">—</span>`;
+    return `<tr><td><b>${esc(c.cidade)}</b></td><td>${esc(c.uf)}</td><td>${bs}</td>
+    <td><select class="status ${c.status.split(" ")[0]}" data-i="${i}" onchange="chStatus(${i},this.value)">
+      ${["nao iniciada","em andamento","prospectada"].map(s=>`<option ${c.status===s?"selected":""} value="${s}">${s[0].toUpperCase()+s.slice(1)}</option>`).join("")}
+    </select></td>
+    <td class="actions"><button class="btn-ghost" onclick="editC(${i})">✏️ Editar</button><button class="btn-danger" onclick="delC(${i})">🗑️</button></td></tr>`;
+  }).join("");
+  $("tabelaCidades").innerHTML=cs?`<table><thead><tr><th>Cidade</th><th>UF</th><th>Bairros</th><th>Status</th><th></th></tr></thead><tbody>${cs}</tbody></table>`:`<div class="empty">Nenhuma cidade encontrada.</div>`;
+  const ns=data.nichos.filter(n=>norm(n.nome+" "+(n.obs||"")).includes(q)).map(n=>{
+    const i=data.nichos.indexOf(n);
+    return `<tr><td><b>${esc(n.nome)}</b></td><td>${esc(n.obs||"—")}</td>
+    <td class="actions"><button class="btn-ghost" onclick="editN(${i})">✏️ Editar</button><button class="btn-danger" onclick="delN(${i})">🗑️</button></td></tr>`;
+  }).join("");
+  $("tabelaNichos").innerHTML=ns?`<table><thead><tr><th>Nicho</th><th>Observações</th><th></th></tr></thead><tbody>${ns}</tbody></table>`:`<div class="empty">Nenhum nicho encontrado.</div>`;
+}
+window.chStatus=(i,v)=>{data.cidades[i].status=v;save();stats();toast("Status atualizado")};
+window.editC=i=>{editCidade=i;const c=data.cidades[i];openDlg("cidade","Editar cidade",c.cidade,c.uf,c.bairros.join(", "),c.status)};
+window.delC=i=>{if(confirm(`Excluir ${data.cidades[i].cidade}?`)){data.cidades.splice(i,1);save();render();toast("Cidade excluída")}};
+window.editN=i=>{editNicho=i;const n=data.nichos[i];openDlg("nicho","Editar nicho",n.nome,n.obs)};
+window.delN=i=>{if(confirm(`Excluir o nicho "${data.nichos[i].nome}"?`)){data.nichos.splice(i,1);save();render();toast("Nicho excluído")}};
+function openDlg(kind,title,a,b,c){
+  $("dlgTitle").textContent=title;
+  const isC=kind==="cidade";
+  $("dlgCidade").style.display=isC?"block":"none";
+  $("dlgNicho").style.display=isC?"none":"block";
+  $("fCidade").value=a||"";$("fUf").value=b||"";$("fBairros").value=c||"";
+  $("fStatus").value=(c?undefined:$("fStatus").value)||"nao iniciada";
+  $("fNome").value=a||"";$("fObs").value=b||"";
+  $("dlg").showModal();
+  if(isC)$("fStatus").value=data.cidades[editCidade]?.status||"nao iniciada";
+  $("dlg").dataset.kind=kind;
+}
+$("btnAdd").onclick=()=>{editCidade=null;editNicho=null;openDlg(tab==="cidades"?"cidade":"nicho",tab==="cidades"?"Adicionar cidade":"Adicionar nicho","")};
+$("btnCancel").onclick=()=>$("dlg").close();
+$("btnSave").onclick=()=>{
+  const kind=$("dlg").dataset.kind;
+  if(kind==="cidade"){
+    const nome=$("fCidade").value.trim();if(!nome)return toast("Informe a cidade");
+    const obj={cidade:nome,uf:$("fUf").value.trim().toUpperCase(),bairros:$("fBairros").value.split(",").map(s=>s.trim()).filter(Boolean),status:$("fStatus").value};
+    if(editCidade!==null&&editCidade!==undefined&&editCidade!==""){data.cidades[editCidade]=obj}else{data.cidades.push(obj)}
+  }else{
+    const nome=$("fNome").value.trim();if(!nome)return toast("Informe o nicho");
+    const obj={nome,obs:$("fObs").value.trim()};
+    if(editNicho!==null&&editNicho!==undefined&&editNicho!==""){data.nichos[editNicho]=obj}else{data.nichos.push(obj)}
+  }
+  save();$("dlg").close();render();toast("Salvo ✓");
+};
+$("busca").oninput=render;
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active");tab=t.dataset.tab;
+  $("tabelaCidades").style.display=tab==="cidades"?"block":"none";
+  $("tabelaNichos").style.display=tab==="nichos"?"block":"none";
+});
+$("btnExport").onclick=()=>{
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="cidades_nichos.json";a.click();
+};
+$("btnImport").onclick=()=>$("fileImport").click();
+$("fileImport").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);if(Array.isArray(j.cidades))data.cidades=j.cidades;if(Array.isArray(j.nichos))data.nichos=j.nichos;save();render();toast("Importado ✓")}catch{toast("JSON inválido")}};
+  r.readAsText(f);
+};
+render();
+</script>
+</body>
+</html>
