@@ -81,11 +81,11 @@ dialog textarea{resize:vertical;min-height:56px}
 .bar-label{font-size:.8rem;color:var(--gz-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ===== responsivo: fontes crescem em telas menores ===== */
 @media (max-width:900px){
-  html{font-size:17px}
+  html{font-size:16.5px}
   .dash{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
 }
 @media (max-width:720px){
-  html{font-size:18px}
+  html{font-size:17px}
   body{padding:14px 12px 44px}
   .brand h1{font-size:1.3rem}
   .brand small{font-size:.82rem}
@@ -101,8 +101,6 @@ dialog textarea{resize:vertical;min-height:56px}
   .filters input,.filters select{width:100%;min-width:0!important;min-height:44px;font-size:.95rem}
   input,select,textarea{min-height:44px;font-size:.95rem}
   button{padding:11px 16px;font-size:.92rem}
-  .actions{width:100%}
-  .actions button{flex:1}
   .row{flex-wrap:wrap;padding:14px 15px;gap:8px}
   .row-main{flex:1 1 100%}
   .b{font-size:1.02rem}
@@ -115,6 +113,11 @@ dialog textarea{resize:vertical;min-height:56px}
   .grid2{grid-template-columns:1fr}
   .pager small{font-size:.85rem}
   dialog{padding:18px;width:min(96vw,460px)}
+}
+@media (max-width:520px){
+  html{font-size:18px}
+  .actions{width:100%}
+  .actions button{flex:1}
 }
 </style>
 </head>
