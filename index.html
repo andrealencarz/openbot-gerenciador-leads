@@ -86,48 +86,47 @@ dialog textarea{resize:vertical;min-height:56px}
 .bar-fill{background:linear-gradient(90deg,var(--gz-accent),#8b5cf6);height:100%;border-radius:999px;transition:width .3s}
 .bar-val{text-align:right;font-size:.8rem;color:var(--gz-text);font-weight:600}
 .bar-label{font-size:.8rem;color:var(--gz-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* ===== responsivo: fontes crescem em telas menores ===== */
+/* ===== responsivo ===== */
 @media (min-width:1600px){
   html{font-size:17px}
 }
-@media (max-width:900px){
-  html{font-size:16.5px}
-  .dash{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+/* painel lateral / tablet: 3 colunas de indicadores, sem fontes gigantes */
+@media (max-width:1100px){
+  .dash{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dash-charts{grid-template-columns:1fr}
+  .dash-charts .dash-box:nth-child(3){grid-column:auto}
+  .bar-row{grid-template-columns:150px 1fr 36px}
 }
-@media (max-width:720px){
-  html{font-size:17px}
-  body{padding:14px 12px 44px}
-  .brand h1{font-size:1.3rem}
-  .brand small{font-size:.82rem}
-  .stats{grid-template-columns:repeat(2,1fr)}
-  .dash{grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}
-  .dash .stat{padding:12px}
-  .bar-row{grid-template-columns:1fr auto;gap:6px 10px}
-  .bar-label{grid-column:1/-1;font-size:.88rem}
-  .tab{padding:10px 16px;font-size:.9rem}
+@media (max-width:780px){
+  body{padding:16px 14px 44px}
+  .brand h1{font-size:1.1rem}
+  .tab{padding:8px 14px;font-size:.84rem}
   .tabs{width:100%;flex-wrap:wrap;justify-content:center;overflow-x:visible}
-  /* filtros ocupam a largura toda e viram alvos de toque confortáveis */
-  .filters{gap:8px}
-  .filters input,.filters select{width:100%;min-width:0!important;min-height:44px;font-size:.95rem}
-  input,select,textarea{min-height:44px;font-size:.95rem}
-  button{padding:11px 16px;font-size:.92rem}
-  .row{flex-wrap:wrap;padding:14px 15px;gap:8px}
+  .filters{gap:6px}
+  .row{flex-wrap:wrap;padding:12px 14px;gap:6px}
   .row-main{flex:1 1 100%}
-  .b{font-size:1.02rem}
-  .sub{font-size:.86rem;white-space:normal}
   .row-meta{order:3;width:100%;max-width:none;padding-left:0}
-  .tag{font-size:.82rem;padding:5px 12px}
-  .row-side{width:100%;justify-content:space-between;margin-left:0;gap:10px}
-  select.status{max-width:none;flex:1;min-height:40px;font-size:.88rem}
-  .btn-edit,.btn-danger{padding:9px 12px;font-size:1rem}
+  .row-side{width:100%;justify-content:space-between;margin-left:0;gap:8px}
+  select.status{max-width:none;flex:1;min-height:38px}
   .grid2{grid-template-columns:1fr}
-  .pager small{font-size:.85rem}
-  dialog{padding:18px;width:min(96vw,460px)}
+  .dash{padding:12px;gap:8px}
+  .bar-row{grid-template-columns:1fr auto;gap:4px 10px}
+  .bar-label{grid-column:1/-1;white-space:normal}
 }
+/* celular: fontes um pouco maiores e toque confortável */
 @media (max-width:520px){
-  html{font-size:18px}
+  html{font-size:17px}
+  body{padding:14px 12px 40px}
+  .dash{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .filters input,.filters select{width:100%;min-width:0!important;min-height:44px}
   .actions{width:100%}
   .actions button{flex:1}
+  .tab{padding:9px 15px}
+  input,select,textarea{min-height:44px}
+  button{padding:11px 15px}
+  .row{padding:13px 14px}
+  .tag{padding:4px 11px}
 }
 </style>
 </head>
