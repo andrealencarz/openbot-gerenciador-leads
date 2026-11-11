@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gerenciador de Cidades & Nichos</title>
+<title>Gerenciador de Leads</title>
 <style>
 :root{
   --bg:#0f1117;--card:#171a23;--card2:#1e2230;--border:#2a2f3f;
@@ -12,7 +12,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px}
-.container{max-width:1100px;margin:0 auto}
+.container{max-width:1200px;margin:0 auto}
 header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
 h1{font-size:1.5rem;font-weight:700}
 h1 span{color:var(--accent)}
@@ -23,44 +23,42 @@ button:hover{filter:brightness(1.15)}
 .btn-ghost{background:var(--card2);color:var(--text)}
 .btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
 .stats{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;min-width:140px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;min-width:120px}
 .stat b{display:block;font-size:1.4rem;color:var(--accent)}
 .stat small{color:var(--muted)}
 .searchbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 input,select{font:inherit;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);outline:none;min-width:0}
 input:focus,select:focus{border-color:var(--accent)}
 input[type=search]{flex:1;min-width:200px}
-.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content}
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content;flex-wrap:wrap}
 .tab{padding:8px 20px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600;background:transparent}
 .tab.active{background:var(--accent);color:#fff}
 table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:.92rem;vertical-align:top}
-th{background:var(--card2);color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:.9rem;vertical-align:top}
+th{background:var(--card2);color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(79,124,255,.05)}
 td.actions{white-space:nowrap;text-align:right}
 .actions button{padding:6px 12px;font-size:.8rem;border-radius:8px;margin-left:4px}
 .tag{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:.78rem;margin:2px 3px 2px 0}
-select.status{padding:4px 8px;font-size:.82rem;border-radius:8px}
-select.status.nao{color:var(--muted)}
-select.status.andamento{color:#f59e0b}
-select.status.feito{color:var(--accent2)}
+.tag.sem{border-color:var(--accent2);color:var(--accent2)}
+select.status{padding:4px 8px;font-size:.8rem;border-radius:8px;max-width:150px}
 .empty{padding:40px;text-align:center;color:var(--muted)}
 dialog{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:480px;width:92%}
 dialog::backdrop{background:rgba(0,0,0,.6)}
 dialog h2{font-size:1.1rem;margin-bottom:16px}
 label{display:block;font-size:.8rem;color:var(--muted);margin:12px 0 4px;font-weight:600}
-dialog input,dialog textarea{width:100%}
-dialog textarea{resize:vertical;min-height:70px}
+dialog input,dialog textarea,dialog select{width:100%}
+dialog textarea{resize:vertical;min-height:60px}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#fff;padding:10px 20px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#fff;padding:10px 20px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:5}
 .toast.show{opacity:1}
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>🗺️ Gerenciador de <span>Cidades & Nichos</span></h1>
+    <h1>🚀 Gerenciador de <span>Leads</span></h1>
     <div class="toolbar">
       <button class="btn-ghost" id="btnExport">⬇️ Exportar JSON</button>
       <button class="btn-ghost" id="btnImport">⬆️ Importar</button>
@@ -69,38 +67,84 @@ dialog textarea{resize:vertical;min-height:70px}
   </header>
 
   <div class="stats">
+    <div class="stat"><b id="stLeads">0</b><small>Leads</small></div>
+    <div class="stat"><b id="stSemSite">0</b><small>Sem site</small></div>
+    <div class="stat"><b id="stPropostas">0</b><small>Propostas enviadas</small></div>
+    <div class="stat"><b id="stReunioes">0</b><small>Reuniões marcadas</small></div>
     <div class="stat"><b id="stCidades">0</b><small>Cidades</small></div>
-    <div class="stat"><b id="stBairros">0</b><small>Bairros</small></div>
-    <div class="stat"><b id="stNichos">0</b><small>Nichos</small></div>
-    <div class="stat"><b id="stPendentes">0</b><small>Não iniciadas</small></div>
+    <div class="stat"><b id="stCampanhas">0</b><small>Campanhas</small></div>
   </div>
 
   <div class="tabs">
-    <div class="tab active" data-tab="cidades">Cidades & Bairros</div>
+    <div class="tab active" data-tab="leads">Leads</div>
+    <div class="tab" data-tab="campanhas">Campanhas</div>
+    <div class="tab" data-tab="cidades">Cidades & Bairros</div>
     <div class="tab" data-tab="nichos">Nichos</div>
   </div>
 
   <div class="searchbar">
-    <input type="search" id="busca" placeholder="🔍 Buscar por cidade, UF ou bairro…">
+    <input type="search" id="busca" placeholder="🔍 Buscar por nome, telefone, cidade, nicho…">
+    <select id="filtroStatus" style="min-width:180px">
+      <option value="">Todos os status</option>
+    </select>
   </div>
 
-  <div id="tabelaCidades"></div>
+  <div id="tabelaLeads"></div>
+  <div id="tabelaCampanhas" style="display:none"></div>
+  <div id="tabelaCidades" style="display:none"></div>
   <div id="tabelaNichos" style="display:none"></div>
 </div>
 
 <dialog id="dlg">
   <h2 id="dlgTitle">Adicionar</h2>
-  <div id="dlgCidade">
+
+  <div id="dlgLead" style="display:none">
+    <label>Nome / Empresa *</label><input id="flNome" placeholder="Ex.: Odonto Sorriso">
+    <label>Telefone</label><input id="flTel" placeholder="Ex.: (85) 99999-0000">
+    <label>Email</label><input id="flEmail" placeholder="Ex.: contato@exemplo.com.br">
+    <label>Cidade</label><input id="flCidade" placeholder="Ex.: Fortaleza" list="dlCidades"><datalist id="dlCidades"></datalist>
+    <label>Nicho</label><input id="flNicho" placeholder="Ex.: Clínicas odontológicas" list="dlNichos"><datalist id="dlNichos"></datalist>
+    <label>Site</label>
+    <select id="flSite"><option value="sem site">Sem site</option><option value="com site">Com site</option><option value="desconhecido">Desconhecido</option></select>
+    <label>Status</label>
+    <select id="flStatus">
+      <option value="novo">Novo</option>
+      <option value="contato feito">Contato feito</option>
+      <option value="proposta enviada">Proposta enviada</option>
+      <option value="reuniao marcada">Reunião marcada</option>
+      <option value="fechado">Fechado</option>
+      <option value="perdido">Perdido</option>
+    </select>
+    <label>Observações</label><textarea id="flObs"></textarea>
+  </div>
+
+  <div id="dlgCampanha" style="display:none">
+    <label>Nome da campanha *</label><input id="fcNome" placeholder="Ex.: Odontos sem site — Fortaleza">
+    <label>Nicho</label><input id="fcNicho" placeholder="Ex.: Clínicas odontológicas">
+    <label>Cidades (separadas por vírgula)</label><textarea id="fcCidades" placeholder="Ex.: Fortaleza, Teresina"></textarea>
+    <label>Status</label>
+    <select id="fcStatus">
+      <option value="planejada">Planejada</option>
+      <option value="ativa">Ativa</option>
+      <option value="pausada">Pausada</option>
+      <option value="concluida">Concluída</option>
+    </select>
+    <label>Observações</label><textarea id="fcObs"></textarea>
+  </div>
+
+  <div id="dlgCidade" style="display:none">
     <label>Cidade *</label><input id="fCidade" placeholder="Ex.: Fortaleza">
     <label>UF</label><input id="fUf" placeholder="Ex.: CE" maxlength="2" style="text-transform:uppercase">
     <label>Bairros (separados por vírgula)</label><textarea id="fBairros" placeholder="Ex.: Meireles, Aldeota, Papicu"></textarea>
     <label>Status</label>
     <select id="fStatus"><option value="nao iniciada">Não iniciada</option><option value="em andamento">Em andamento</option><option value="prospectada">Prospectada</option></select>
   </div>
+
   <div id="dlgNicho" style="display:none">
     <label>Nicho *</label><input id="fNome" placeholder="Ex.: Clínicas odontológicas">
     <label>Observações</label><textarea id="fObs" placeholder="Termos de busca, variações…"></textarea>
   </div>
+
   <div class="form-actions">
     <button class="btn-ghost" id="btnCancel">Cancelar</button>
     <button class="btn-primary" id="btnSave">Salvar</button>
@@ -140,9 +184,13 @@ const SEED_NICHOS=[
  {nome:"Pet shops",obs:"Pet shop, clínica veterinária, banho e tosa"},
  {nome:"Clínicas estéticas",obs:"Clínica de estética, depilação, esteticista"}
 ];
-const KEY="gerenciador_cidades_nichos_v1";
+const STATUS_LEADS=["novo","contato feito","proposta enviada","reuniao marcada","fechado","perdido"];
+const STATUS_CAMP=["planejada","ativa","pausada","concluida"];
+const STATUS_CIDADE=["nao iniciada","em andamento","prospectada"];
+
+const KEY="gerenciador_leads_v2";
 let storageOk=true;
-let data={cidades:structuredClone(SEED_CIDADES),nichos:structuredClone(SEED_NICHOS)};
+let data={cidades:structuredClone(SEED_CIDADES),nichos:structuredClone(SEED_NICHOS),leads:[],campanhas:[]};
 try{
   const saved=JSON.parse(localStorage.getItem(KEY)||"null");
   if(saved&&Array.isArray(saved.cidades))data=saved;
@@ -151,7 +199,7 @@ let saveTimer=null;
 fetch("/api/state").then(r=>r.json()).then(j=>{
   if(j&&Array.isArray(j.cidades)&&j.cidades.length){data=j;render()}
 }).catch(()=>{});
-let tab="cidades",editCidade=null,editNicho=null;
+let tab="leads",editIdx=null;
 const $=id=>document.getElementById(id);
 function save(){
   if(storageOk){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){storageOk=false}}
@@ -161,86 +209,145 @@ function save(){
       .then(r=>r.json()).then(j=>{if(j&&Array.isArray(j.cidades)){data=j;stats()}}).catch(()=>{});
   },300);
 }
-function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2000)}
 function stats(){
+  $("stLeads").textContent=data.leads.length;
+  $("stSemSite").textContent=data.leads.filter(l=>l.site==="sem site").length;
+  $("stPropostas").textContent=data.leads.filter(l=>l.status==="proposta enviada").length;
+  $("stReunioes").textContent=data.leads.filter(l=>l.status==="reuniao marcada").length;
   $("stCidades").textContent=data.cidades.length;
-  $("stBairros").textContent=data.cidades.reduce((a,c)=>a+c.bairros.length,0);
-  $("stNichos").textContent=data.nichos.length;
-  $("stPendentes").textContent=data.cidades.filter(c=>c.status==="nao iniciada").length;
+  $("stCampanhas").textContent=data.campanhas.length;
 }
-function norm(s){return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function norm(s){return String(s==null?"":s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function optList(arr,v){return arr.map(s=>`<option ${v===s?"selected":""} value="${s}">${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join("")}
+function filtroAtual(){
+  const sel=$("filtroStatus");
+  const opts=new Set();
+  (data.leads||[]).forEach(l=>opts.add(l.status||"novo"));
+  STATUS_LEADS.forEach(s=>opts.add(s));
+  sel.innerHTML=`<option value="">Todos os status</option>`+[...opts].map(s=>`<option ${sel.value===s?"selected":""} value="${s}">${esc(s)}</option>`).join("");
+  return sel.value;
+}
 function render(){
-  const q=norm($("busca").value.trim());
   stats();
-  const cs=data.cidades.filter(c=>{
+  $("dlCidades").innerHTML=data.cidades.map(c=>`<option value="${esc(c.cidade)}">`).join("");
+  $("dlNichos").innerHTML=data.nichos.map(n=>`<option value="${esc(n.nome)}">`).join("");
+  const q=norm($("busca").value.trim());
+  const fs=filtroAtual();
+
+  const ls=data.leads.map((l,i)=>{
+    const hay=norm([l.nome,l.telefone,l.email,l.cidade,l.nicho,l.status,l.obs].join(" "));
+    if(!hay.includes(q))return "";
+    if(fs&&l.status!==fs)return "";
+    const siteTag=l.site==="sem site"?`<span class="tag sem">sem site</span>`:l.site==="com site"?`<span class="tag">com site</span>`:`<span class="tag">?</span>`;
+    return `<tr><td><b>${esc(l.nome)}</b><br><small style="color:var(--muted)">${esc(l.telefone||"")}${l.telefone&&l.email?" · ":""}${esc(l.email||"")}</small></td>
+    <td>${esc(l.cidade||"—")}<br><small style="color:var(--muted)">${esc(l.nicho||"")}</small></td>
+    <td>${siteTag}</td>
+    <td><select class="status" onchange="chStatus('leads',${i},this.value)">${optList(STATUS_LEADS,l.status)}</select></td>
+    <td>${esc(l.obs||"")}</td>
+    <td class="actions"><button class="btn-ghost" onclick="edit('leads',${i})">✏️ Editar</button><button class="btn-danger" onclick="del('leads',${i})">🗑️</button></td></tr>`;
+  }).join("");
+  $("tabelaLeads").innerHTML=ls?`<table><thead><tr><th>Lead</th><th>Cidade / Nicho</th><th>Site</th><th>Status</th><th>Obs.</th><th></th></tr></thead><tbody>${ls}</tbody></table>`:`<div class="empty">Nenhum lead ainda — clique em <b>+ Adicionar</b> para cadastrar o primeiro.</div>`;
+
+  const cms=data.campanhas.map((x,i)=>{
+    const hay=norm([x.nome,x.nicho,x.cidades,x.status,x.obs].join(" "));
+    if(!hay.includes(q))return "";
+    return `<tr><td><b>${esc(x.nome)}</b></td><td>${esc(x.nicho||"—")}</td><td>${(x.cidades||[]).map(c=>`<span class="tag">${esc(c)}</span>`).join("")||"—"}</td>
+    <td><select class="status" onchange="chStatus('campanhas',${i},this.value)">${optList(STATUS_CAMP,x.status)}</select></td>
+    <td>${esc(x.obs||"")}</td>
+    <td class="actions"><button class="btn-ghost" onclick="edit('campanhas',${i})">✏️ Editar</button><button class="btn-danger" onclick="del('campanhas',${i})">🗑️</button></td></tr>`;
+  }).join("");
+  $("tabelaCampanhas").innerHTML=cms?`<table><thead><tr><th>Campanha</th><th>Nicho</th><th>Cidades</th><th>Status</th><th>Obs.</th><th></th></tr></thead><tbody>${cms}</tbody></table>`:`<div class="empty">Nenhuma campanha ainda.</div>`;
+
+  const cs=data.cidades.map((c,i)=>{
     const hay=norm(c.cidade+" "+c.uf+" "+c.bairros.join(" "));
-    return hay.includes(q);
-  }).map((c)=>{
-    const i=data.cidades.indexOf(c);
-    const bs=c.bairros.length?c.bairros.map(esc).map(b=>`<span class="tag">${b}</span>`).join(""):`<span style="color:var(--muted)">—</span>`;
+    if(!hay.includes(q))return "";
+    const bs=c.bairros.length?c.bairros.map(b=>`<span class="tag">${esc(b)}</span>`).join(""):`<span style="color:var(--muted)">—</span>`;
     return `<tr><td><b>${esc(c.cidade)}</b></td><td>${esc(c.uf)}</td><td>${bs}</td>
-    <td><select class="status ${c.status.split(" ")[0]}" data-i="${i}" onchange="chStatus(${i},this.value)">
-      ${["nao iniciada","em andamento","prospectada"].map(s=>`<option ${c.status===s?"selected":""} value="${s}">${s[0].toUpperCase()+s.slice(1)}</option>`).join("")}
-    </select></td>
-    <td class="actions"><button class="btn-ghost" onclick="editC(${i})">✏️ Editar</button><button class="btn-danger" onclick="delC(${i})">🗑️</button></td></tr>`;
+    <td><select class="status" onchange="chStatus('cidades',${i},this.value)">${optList(STATUS_CIDADE,c.status)}</select></td>
+    <td class="actions"><button class="btn-ghost" onclick="edit('cidades',${i})">✏️ Editar</button><button class="btn-danger" onclick="del('cidades',${i})">🗑️</button></td></tr>`;
   }).join("");
   $("tabelaCidades").innerHTML=cs?`<table><thead><tr><th>Cidade</th><th>UF</th><th>Bairros</th><th>Status</th><th></th></tr></thead><tbody>${cs}</tbody></table>`:`<div class="empty">Nenhuma cidade encontrada.</div>`;
-  const ns=data.nichos.filter(n=>norm(n.nome+" "+(n.obs||"")).includes(q)).map(n=>{
-    const i=data.nichos.indexOf(n);
+
+  const ns=data.nichos.map((n,i)=>{
+    const hay=norm(n.nome+" "+(n.obs||""));
+    if(!hay.includes(q))return "";
     return `<tr><td><b>${esc(n.nome)}</b></td><td>${esc(n.obs||"—")}</td>
-    <td class="actions"><button class="btn-ghost" onclick="editN(${i})">✏️ Editar</button><button class="btn-danger" onclick="delN(${i})">🗑️</button></td></tr>`;
+    <td class="actions"><button class="btn-ghost" onclick="edit('nichos',${i})">✏️ Editar</button><button class="btn-danger" onclick="del('nichos',${i})">🗑️</button></td></tr>`;
   }).join("");
   $("tabelaNichos").innerHTML=ns?`<table><thead><tr><th>Nicho</th><th>Observações</th><th></th></tr></thead><tbody>${ns}</tbody></table>`:`<div class="empty">Nenhum nicho encontrado.</div>`;
 }
-window.chStatus=(i,v)=>{data.cidades[i].status=v;save();stats();toast("Status atualizado")};
-window.editC=i=>{editCidade=i;const c=data.cidades[i];openDlg("cidade","Editar cidade",c.cidade,c.uf,c.bairros.join(", "),c.status)};
-window.delC=i=>{if(confirm(`Excluir ${data.cidades[i].cidade}?`)){data.cidades.splice(i,1);save();render();toast("Cidade excluída")}};
-window.editN=i=>{editNicho=i;const n=data.nichos[i];openDlg("nicho","Editar nicho",n.nome,n.obs)};
-window.delN=i=>{if(confirm(`Excluir o nicho "${data.nichos[i].nome}"?`)){data.nichos.splice(i,1);save();render();toast("Nicho excluído")}};
-function openDlg(kind,title,a,b,c){
-  $("dlgTitle").textContent=title;
-  const isC=kind==="cidade";
-  $("dlgCidade").style.display=isC?"block":"none";
-  $("dlgNicho").style.display=isC?"none":"block";
-  $("fCidade").value=a||"";$("fUf").value=b||"";$("fBairros").value=c||"";
-  $("fStatus").value=(c?undefined:$("fStatus").value)||"nao iniciada";
-  $("fNome").value=a||"";$("fObs").value=b||"";
-  $("dlg").showModal();
-  if(isC)$("fStatus").value=data.cidades[editCidade]?.status||"nao iniciada";
+window.chStatus=(tab,i,v)=>{data[tab][i].status=v;save();stats();toast("Status atualizado")};
+const CAMPOS={
+  leads:["flNome","flTel","flEmail","flCidade","flNicho","flSite","flStatus","flObs"],
+  campanhas:["fcNome","fcNicho","fcCidades","fcStatus","fcObs"],
+  cidades:["fCidade","fUf","fBairros","fStatus"],
+  nichos:["fNome","fObs"]
+};
+const PANES={leads:"dlgLead",campanhas:"dlgCampanha",cidades:"dlgCidade",nichos:"dlgNicho"};
+window.edit=(tab,i)=>{editIdx={tab,i};const o=data[tab][i];abrir(tab,"Editar",o)};
+window.del=(tab,i)=>{
+  const nome=data[tab][i].nome||data[tab][i].cidade||"";
+  if(confirm(`Excluir "${nome}"?`)){data[tab].splice(i,1);save();render();toast("Excluído")}
+};
+function abrir(kind,title,o){
+  editIdx=kind===tab?editIdx:null;
+  $("dlgTitle").textContent=title+" "+({leads:"lead",campanhas:"campanha",cidades:"cidade",nichos:"nicho"}[kind]);
+  Object.entries(PANES).forEach(([k,id])=>$(id).style.display=k===kind?"block":"none");
+  const get=id=>{const el=$(id);return el?el.value:""};
+  const set=(id,v)=>{const el=$(id);if(el)el.value=v||""};
+  if(kind==="leads"){set("flNome",o.nome);set("flTel",o.telefone);set("flEmail",o.email);set("flCidade",o.cidade);set("flNicho",o.nicho);set("flSite",o.site||"sem site");set("flStatus",o.status||"novo");set("flObs",o.obs)}
+  if(kind==="campanhas"){set("fcNome",o.nome);set("fcNicho",o.nicho);set("fcCidades",(o.cidades||[]).join(", "));set("fcStatus",o.status||"planejada");set("fcObs",o.obs)}
+  if(kind==="cidades"){set("fCidade",o.cidade);set("fUf",o.uf);set("fBairros",(o.bairros||[]).join(", "));set("fStatus",o.status||"nao iniciada")}
+  if(kind==="nichos"){set("fNome",o.nome);set("fObs",o.obs)}
   $("dlg").dataset.kind=kind;
+  $("dlg").showModal();
 }
-$("btnAdd").onclick=()=>{editCidade=null;editNicho=null;openDlg(tab==="cidades"?"cidade":"nicho",tab==="cidades"?"Adicionar cidade":"Adicionar nicho","")};
+$("btnAdd").onclick=()=>{editIdx=null;abrir(tab,"Adicionar",{})};
 $("btnCancel").onclick=()=>$("dlg").close();
 $("btnSave").onclick=()=>{
   const kind=$("dlg").dataset.kind;
-  if(kind==="cidade"){
+  let obj;
+  if(kind==="leads"){
+    const nome=$("flNome").value.trim();if(!nome)return toast("Informe o nome");
+    obj={nome,telefone:$("flTel").value.trim(),email:$("flEmail").value.trim(),cidade:$("flCidade").value.trim(),nicho:$("flNicho").value.trim(),site:$("flSite").value,status:$("flStatus").value,obs:$("flObs").value.trim()};
+  }else if(kind==="campanhas"){
+    const nome=$("fcNome").value.trim();if(!nome)return toast("Informe o nome da campanha");
+    obj={nome,nicho:$("fcNicho").value.trim(),cidades:$("fcCidades").value.split(",").map(s=>s.trim()).filter(Boolean),status:$("fcStatus").value,obs:$("fcObs").value.trim()};
+  }else if(kind==="cidades"){
     const nome=$("fCidade").value.trim();if(!nome)return toast("Informe a cidade");
-    const obj={cidade:nome,uf:$("fUf").value.trim().toUpperCase(),bairros:$("fBairros").value.split(",").map(s=>s.trim()).filter(Boolean),status:$("fStatus").value};
-    if(editCidade!==null&&editCidade!==undefined&&editCidade!==""){data.cidades[editCidade]=obj}else{data.cidades.push(obj)}
+    obj={cidade:nome,uf:$("fUf").value.trim().toUpperCase(),bairros:$("fBairros").value.split(",").map(s=>s.trim()).filter(Boolean),status:$("fStatus").value};
   }else{
     const nome=$("fNome").value.trim();if(!nome)return toast("Informe o nicho");
-    const obj={nome,obs:$("fObs").value.trim()};
-    if(editNicho!==null&&editNicho!==undefined&&editNicho!==""){data.nichos[editNicho]=obj}else{data.nichos.push(obj)}
+    obj={nome,obs:$("fObs").value.trim()};
   }
+  if(editIdx&&editIdx.tab===kind){data[kind][editIdx.i]=obj}else{data[kind].push(obj)}
   save();$("dlg").close();render();toast("Salvo ✓");
 };
 $("busca").oninput=render;
+$("filtroStatus").onchange=render;
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   t.classList.add("active");tab=t.dataset.tab;
-  $("tabelaCidades").style.display=tab==="cidades"?"block":"none";
-  $("tabelaNichos").style.display=tab==="nichos"?"block":"none";
+  ["tabelaLeads","tabelaCampanhas","tabelaCidades","tabelaNichos"].forEach(id=>$(id).style.display="none");
+  $("tabela"+tab.charAt(0).toUpperCase()+tab.slice(1)).style.display="block";
+  $("filtroStatus").style.display=(tab==="leads"||tab==="campanhas")?"block":"none";
+  render();
 });
 $("btnExport").onclick=()=>{
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="cidades_nichos.json";a.click();
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="gerenciador_leads.json";a.click();
 };
 $("btnImport").onclick=()=>$("fileImport").click();
 $("fileImport").onchange=e=>{
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=()=>{try{const j=JSON.parse(r.result);if(Array.isArray(j.cidades))data.cidades=j.cidades;if(Array.isArray(j.nichos))data.nichos=j.nichos;save();render();toast("Importado ✓")}catch{toast("JSON inválido")}};
+  r.onload=()=>{try{
+    const j=JSON.parse(r.result);
+    ["cidades","nichos","leads","campanhas"].forEach(k=>{if(Array.isArray(j[k]))data[k]=j[k]});
+    save();render();toast("Importado ✓")
+  }catch{toast("JSON inválido")}};
   r.readAsText(f);
 };
 render();

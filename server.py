@@ -5,18 +5,61 @@ import json, sqlite3, http.server, os
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gerenciador.db")
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
+# tabela -> (colunas simples, colunas que chegam como lista)
+TABLES = {
+    "cidades":   (["cidade", "uf", "status"], ["bairros"]),
+    "nichos":    (["nome", "obs"], []),
+    "leads":     (["nome", "telefone", "email", "cidade", "nicho", "site", "status", "obs"], []),
+    "campanhas": (["nome", "nicho", "status", "obs"], ["cidades"]),
+}
+
 def db():
     c = sqlite3.connect(DB)
-    c.execute("CREATE TABLE IF NOT EXISTS cidades (id INTEGER PRIMARY KEY AUTOINCREMENT, cidade TEXT, uf TEXT, bairros TEXT, status TEXT)")
-    c.execute("CREATE TABLE IF NOT EXISTS nichos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, obs TEXT)")
+    for t, (cols, _) in TABLES.items():
+        c.execute("CREATE TABLE IF NOT EXISTS %s (id INTEGER PRIMARY KEY AUTOINCREMENT, %s)" %
+                  (t, ", ".join("%s TEXT" % c2 for c2 in cols)))
     return c
 
 def load(c):
-    cidades = [{"id": r[0], "cidade": r[1], "uf": r[2], "bairros": json.loads(r[3]), "status": r[4]}
-               for r in c.execute("SELECT id,cidade,uf,bairros,status FROM cidades ORDER BY id")]
-    nichos = [{"id": r[0], "nome": r[1], "obs": r[2]}
-              for r in c.execute("SELECT id,nome,obs FROM nichos ORDER BY id")]
-    return {"cidades": cidades, "nichos": nichos}
+    out = {}
+    for t, (cols, lists) in TABLES.items():
+        allc = cols + lists
+        rows = []
+        for r in c.execute("SELECT id,%s FROM %s ORDER BY id" % (",".join(allc), t)):
+            d = {"id": r[0]}
+            for i, k in enumerate(allc):
+                d[k] = json.loads(r[i + 1]) if k in lists else r[i + 1]
+            rows.append(d)
+        out[t] = rows
+    return out
+
+def sync(c, data):
+    for t, (cols, _) in TABLES.items():
+        items = data.get(t, [])
+        if not isinstance(items, list):
+            continue
+        ids_recebidos = set()
+        for it in items:
+            vals, parts = [], []
+            for col in cols:
+                vals.append(it.get(col)); parts.append("?")
+            for col in TABLES[t][1]:
+                vals.append(json.dumps(it.get(col, []), ensure_ascii=False)); parts.append("?")
+            if isinstance(it.get("id"), int):
+                row = c.execute("SELECT id FROM %s WHERE id=?" % t, (it["id"],)).fetchone()
+                if row:
+                    c.execute("UPDATE %s SET %s WHERE id=?" % (t, ",".join("%s=?" % x for x in cols + TABLES[t][1])),
+                              vals + [it["id"]])
+                    ids_recebidos.add(it["id"])
+                    continue
+            cur = c.execute("INSERT INTO %s(%s) VALUES(%s)" % (t, ",".join(cols + TABLES[t][1]), ",".join(parts)), vals)
+            it["id"] = cur.lastrowid
+            ids_recebidos.add(it["id"])
+        presentes = {r[0] for r in c.execute("SELECT id FROM %s" % t)}
+        a_remover = presentes - ids_recebidos
+        if a_remover:
+            c.execute("DELETE FROM %s WHERE id IN (%s)" % (t, ",".join("?" * len(a_remover))), tuple(a_remover))
+    c.commit()
 
 class H(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
@@ -46,30 +89,7 @@ class H(http.server.SimpleHTTPRequestHandler):
             data = json.loads(self.rfile.read(n) or b"{}")
             c = db()
             try:
-                ids_c = {r[0] for r in c.execute("SELECT id FROM cidades")}
-                for it in data.get("cidades", []):
-                    b = json.dumps(it.get("bairros", []), ensure_ascii=False)
-                    if it.get("id") in ids_c:
-                        c.execute("UPDATE cidades SET cidade=?,uf=?,bairros=?,status=? WHERE id=?",
-                                  (it.get("cidade"), it.get("uf"), b, it.get("status"), it["id"]))
-                        ids_c.discard(it["id"])
-                    else:
-                        cur = c.execute("INSERT INTO cidades(cidade,uf,bairros,status) VALUES(?,?,?,?)",
-                                        (it.get("cidade"), it.get("uf"), b, it.get("status")))
-                        it["id"] = cur.lastrowid
-                if ids_c:
-                    c.execute("DELETE FROM cidades WHERE id IN (%s)" % ",".join("?" * len(ids_c)), tuple(ids_c))
-                ids_n = {r[0] for r in c.execute("SELECT id FROM nichos")}
-                for it in data.get("nichos", []):
-                    if it.get("id") in ids_n:
-                        c.execute("UPDATE nichos SET nome=?,obs=? WHERE id=?", (it.get("nome"), it.get("obs"), it["id"]))
-                        ids_n.discard(it["id"])
-                    else:
-                        cur = c.execute("INSERT INTO nichos(nome,obs) VALUES(?,?)", (it.get("nome"), it.get("obs")))
-                        it["id"] = cur.lastrowid
-                if ids_n:
-                    c.execute("DELETE FROM nichos WHERE id IN (%s)" % ",".join("?" * len(ids_n)), tuple(ids_n))
-                c.commit()
+                sync(c, data)
                 self._json(load(c))
             finally:
                 c.close()
@@ -77,9 +97,4 @@ class H(http.server.SimpleHTTPRequestHandler):
         self._json({"erro": "rota desconhecida"}, 404)
 
 if __name__ == "__main__":
-    c = db()
-    if c.execute("SELECT COUNT(*) FROM cidades").fetchone()[0] == 0 and \
-       c.execute("SELECT COUNT(*) FROM nichos").fetchone()[0] == 0:
-        print("banco vazio — dados serão importados do navegador na primeira gravação")
-    c.close()
     http.server.ThreadingHTTPServer(("127.0.0.1", 8642), H).serve_forever()
