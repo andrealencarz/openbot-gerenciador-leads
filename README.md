@@ -29,6 +29,14 @@ Para usar em outra máquina da rede, o servidor escuta só em `127.0.0.1` por pa
 | `ensure_server.py` | sobe o servidor se preciso e confirma que responde |
 | `gerenciador.db` | banco de dados, criado na primeira execução (não vai para o Git) |
 
+## E-mails mascarados e coluna de dados
+
+Na lista de Leads, cada linha mostra uma coluna **Dados — e-mail · site · LinkedIn** com o
+e-mail (mascarado por padrão, ex.: `c••••••@d•••••••`), o site como link e o LinkedIn
+como `Ver perfil`. O botão **mostrar** revela o e-mail daquela linha, e **👁 Mostrar
+e-mails** no cabeçalho revela ou oculta todos. A escolha fica salva só no seu navegador
+(`localStorage`); o banco guarda o e-mail inteiro, e o formulário de edição também.
+
 ## Banco e filtros
 
 O SQLite é a fonte principal: a tela carrega de `/api/state` ao abrir e recarrega quando
