@@ -243,7 +243,7 @@ select{cursor:pointer}
   position:fixed;z-index:80;min-width:160px;display:none;
   background:var(--gz-card2);border:1px solid var(--gz-border-strong);
   border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.7);
-  padding:5px;max-height:280px;overflow:auto;
+  padding:5px;max-height:none;overflow-y:auto;
   overscroll-behavior:contain;
 }
 .cs.open .cs-menu{display:block}
@@ -972,19 +972,25 @@ function csRefresh(wrap){
 function csPosicionar(wrap){
   const btn=wrap.querySelector(".cs-btn"),menu=wrap.querySelector(".cs-menu");
   const r=btn.getBoundingClientRect();
-  const largura=Math.min(Math.max(r.width,170),window.innerWidth-16);
+  const largura=Math.min(Math.max(r.width,190),window.innerWidth-16);
   menu.style.width=largura+"px";
   menu.style.left=Math.max(8,Math.min(r.left,window.innerWidth-largura-8))+"px";
+  menu.style.minWidth="";
+  menu.style.maxHeight="";
+  menu.style.top="0px";
   menu.style.visibility="hidden";
-  const altura=menu.offsetHeight;
-  const abaixo=window.innerHeight-r.bottom-12,acima=r.top-12;
-  if(altura>abaixo&&acima>abaixo){
-    menu.style.maxHeight=Math.max(120,acima-6)+"px";
-    menu.style.top=Math.max(8,r.top-Math.min(altura,acima-6)-6)+"px";
-  }else{
-    menu.style.maxHeight=Math.min(280,Math.max(120,abaixo))+"px";
-    menu.style.top=(r.bottom+6)+"px";
+  // lista curta: o bastante para 6 opções, nunca mais que 240px
+  const total=Math.min(menu.scrollHeight,240);
+  const abaixo=Math.max(0,window.innerHeight-r.bottom-16);
+  const acima=Math.max(0,r.top-16);
+  let altura=Math.min(total,abaixo);
+  let topo=r.bottom+6;
+  if(altura<Math.min(total,130)&&acima>altura){
+    altura=Math.min(total,acima);
+    topo=Math.round(r.top-altura-6);
   }
+  menu.style.maxHeight=Math.max(90,altura)+"px";
+  menu.style.top=Math.round(topo)+"px";
   menu.style.visibility="";
 }
 function csToggle(wrap){
