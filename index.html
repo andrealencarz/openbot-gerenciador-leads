@@ -285,8 +285,21 @@ body.cs-rolagem .main{overscroll-behavior:contain}
   font-size:.7rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.07em;color:var(--gz-muted);
 }
+/* cabeçalho da lista de leads: colunas alinhadas com a linha do lead */
+.list-head.list-head-leads{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) minmax(220px,33%) minmax(0,26%) auto;
+  gap:12px;align-items:center;
+}
+@media (min-width:1061px){
+  #tabelaLeads .row{display:grid;grid-template-columns:36px minmax(0,1fr) minmax(230px,33%) minmax(0,26%) auto;align-items:center}
+  #tabelaLeads .row-side{margin-left:0;justify-self:end}
+}
+.list-head.list-head-leads span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list-head .head-toggle{text-align:right;text-transform:none;letter-spacing:0}
+.head-toggle .row-toggle{font-size:.68rem}
 .row{
-  display:flex;align-items:center;gap:14px;
+  display:flex;align-items:center;gap:12px;
   padding:13px 18px;
   border-bottom:1px solid var(--gz-border);
   transition:background .12s;
@@ -302,6 +315,29 @@ body.cs-rolagem .main{overscroll-behavior:contain}
   flex-shrink:0;letter-spacing:.02em;
 }
 .row-main{flex:1 1 240px;min-width:0}
+.row-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.row-toggle{
+  font:inherit;font-size:.72rem;font-weight:600;
+  padding:3px 10px;border-radius:8px;
+  border:1px solid var(--gz-border);background:var(--gz-card2);
+  color:var(--gz-text-sec) !important;cursor:pointer;white-space:nowrap;
+}
+.row-toggle:hover{background:var(--gz-card-hover);color:var(--gz-text) !important;border-color:var(--gz-border-strong)}
+.row-toggle.on{border-color:rgba(99,102,241,.45);background:var(--gz-accent-soft);color:var(--gz-accent-hover) !important}
+.mask-note{font-size:.68rem;color:var(--gz-muted);white-space:nowrap}
+/* dados de contato: coluna própria, com o que o lead tem de e-mail, site e LinkedIn */
+.mail-mask,.mail-real{font-variant-numeric:tabular-nums}
+.mail-mask{color:var(--gz-text-sec)}
+.mail-real{color:var(--gz-accent-hover);font-weight:600}
+.row-dados{order:2;flex:0 1 33%;min-width:230px;display:flex;flex-direction:column;gap:4px;font-size:.76rem}
+.row-dados .d{display:flex;align-items:center;gap:7px;min-width:0}
+.row-dados .d-ico{flex:0 0 auto;width:14px;text-align:center;opacity:.85}
+.row-dados .d-val{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gz-text-sec)}
+.row-dados a.d-val{text-decoration:none}
+.row-dados a.d-val:hover{color:var(--gz-accent-hover);text-decoration:underline}
+.row-dados .d-mail{cursor:default}
+.row-dados .d-off{color:var(--gz-muted);opacity:.7}
+.d-link{border:0;background:none;padding:0;font:inherit;font-size:.68rem;font-weight:600;color:var(--gz-accent-hover);cursor:pointer;text-decoration:underline}
 .row-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .b{font-weight:650;font-size:.92rem;color:var(--gz-text);letter-spacing:-.01em}
 .sub{
@@ -347,8 +383,9 @@ body.cs-rolagem .main{overscroll-behavior:contain}
 }
 .row-meta{
   display:flex;align-items:center;gap:6px;flex-wrap:wrap;
-  flex:0 1 42%;justify-content:flex-end;
+  flex:0 1 26%;justify-content:flex-end;
 }
+@media (max-width:1240px){.row-meta{flex:1 1 100%;justify-content:flex-start;order:4;padding-left:48px}}
 .row-side{
   display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;
 }
@@ -624,8 +661,9 @@ dialog textarea{resize:vertical;min-height:72px;line-height:1.5}
   .tab{flex:1 1 auto}
   .row{flex-wrap:wrap;padding:13px 15px;gap:8px}
   .row-main{flex:1 1 calc(100% - 52px)}
-  .row-meta{order:3;flex:1 1 100%;justify-content:flex-start;padding-left:50px}
-  .row-side{order:4;width:100%;justify-content:space-between;padding-left:50px;margin-left:0}
+  .row-dados{order:3;flex:1 1 100%;padding-left:50px;min-width:0}
+  .row-meta{order:4;flex:1 1 100%;justify-content:flex-start;padding-left:50px}
+  .row-side{order:5;width:100%;justify-content:space-between;padding-left:50px;margin-left:0}
   .cs.status{max-width:none;flex:1;min-height:36px}
   .cs.status .cs-btn{min-height:36px}
   .bar-row{grid-template-columns:125px 1fr 52px}
@@ -651,7 +689,7 @@ dialog textarea{resize:vertical;min-height:72px;line-height:1.5}
   .kpi-badge{font-size:.63rem;padding:2px 6px}
   .avatar{display:none}
   .row-main{flex:1 1 100%}
-  .row-meta,.row-side{padding-left:0}
+  .row-meta,.row-side,.row-dados{padding-left:0}
   .grid2{grid-template-columns:1fr}
   .bar-row{grid-template-columns:1fr auto;gap:4px 8px}
   .bar-label{grid-column:1/-1}
@@ -1253,16 +1291,74 @@ const RE_EMAIL_RUIM=/(^webhook_|webhook|noreply|no-reply|^dpo@|privacidade@|lgpd
 function emailsBons(v){
   return String(v||"").split(",").map(s=>s.trim()).filter(e=>e.includes("@")&&!RE_EMAIL_RUIM.test(e));
 }
-function blocoContato(l){
+// máscara de e-mail: primeiro caractere do nome e do domínio, resto em pontos
+function mascararEmail(e){
+  const s=String(e||""),i=s.lastIndexOf("@");
+  if(i<1)return "••••••";
+  const parte=t=>t.length<=1?"•":t[0]+"•".repeat(Math.max(2,t.length-1));
+  return parte(s.slice(0,i))+"@"+parte(s.slice(i+1));
+}
+function emMascara(l){
   const ems=emailsBons(l.email);
-  const links=linkWhats(l.telefone)||linkTel(l.telefone);
-  const linhas=[];
-  ems.forEach(e=>linhas.push(`<a class="em" href="mailto:${esc(e)}" title="Enviar e-mail">✉️ ${esc(e)}</a>`));
-  if(links)linhas.push(links);
-  linhas.push(...linksLead(l));
+  if(!ems.length)return `<span class="d-val d-off">— sem e-mail</span>`;
+  const revelado=lerRevelado().has(emailChave(l));
+  const txt=revelado?ems.join(", "):ems.map(mascararEmail).join(", ");
+  const titulo=revelado?"Ocultar e-mail":"Revelar e-mail";
+  return `<span class="d-val d-mail ${revelado?"mail-real":"mail-mask"}" title="${esc(txt)}">${esc(txt)}</span><button type="button" class="d-link" title="${titulo}" aria-label="${titulo}" onclick="toggleRevelar('${esc(emailChave(l))}')">${revelado?"ocultar":"mostrar"}</button>`;
+}
+// a preferência de esconder/mostrar e-mails fica só neste navegador
+function lerRevelado(){
+  if(_revelado)return _revelado;
+  _revelado=new Set();
+  try{JSON.parse(localStorage.getItem("gm_revelar_emails")||"[]").forEach(k=>_revelado.add(k))}catch(e){}
+  return _revelado;
+}
+function emailChave(l){
+  const base=norm(l.email||"").replace(/@/g,"__").replace(/[^a-z0-9_.-]+/g,"_")||"sememail";
+  return (l.id!=null?l.id:norm(l.nome||""))+":"+base;
+}
+let _revelado=null;
+function guardarRevelado(){
+  try{localStorage.setItem("gm_revelar_emails",JSON.stringify([...lerRevelado()]))}catch(e){}
+}
+window.toggleRevelar=(chave)=>{
+  const s=lerRevelado();
+  s.has(chave)?s.delete(chave):s.add(chave);
+  guardarRevelado();
+  render();
+};
+window.revelarTodosEmails=(valor)=>{
+  _revelado=new Set();
+  if(valor)data.leads.forEach(l=>{if(emailsBons(l.email).length)_revelado.add(emailChave(l))});
+  guardarRevelado();
+  render();
+  toast(valor?"E-mails revelados":"E-mails ocultos");
+};
+// ícone do LinkedIn usado na coluna de dados (SVG simples, sem dependência)
+const ICO_LI = "<svg viewBox='0 0 24 24' width='13' height='13' fill='currentColor' aria-hidden='true'><path d='M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05C20.6 8.65 22 10.9 22 14.3V21h-4v-6c0-1.43-.03-3.27-2-3.27-2 0-2.3 1.56-2.3 3.17V21H9z'/></svg>";
+// valor de uma linha da coluna de dados: link quando há URL, senão texto apagado
+function valorDado(txt, url) {
+  const rotulo = esc(txt);
+  if (!url) return `<span class="d-val d-off">${rotulo}</span>`;
+  return `<a class="d-val" href="${esc(url)}" target="_blank" rel="noopener" title="Abrir: ${esc(url)}">${rotulo}</a>`;
+}
+// coluna "Dados": e-mail (mascarado), site e LinkedIn — o que existir
+function dadosLead(l){
+  const li=urlDe(l.site);
+  const ap=urlDe(l.apresentacao);
+  const liPerfil=l.linkedin&&ehLinkedIn(urlDe(l.linkedin))?urlDe(l.linkedin):(li&&ehLinkedIn(li)?li:"");
+  const site=ap||(li&&!ehLinkedIn(li)?li:"");
+  return `<div class="row-dados" title="E-mail, site e LinkedIn do lead">` +
+    `<div class="d"><span class="d-ico">✉️</span>${emMascara(l)}</div>` +
+    `<div class="d"><span class="d-ico">🌐</span>${valorDado(site?rotuloUrl(site):"— sem site",site)}</div>` +
+    `<div class="d"><span class="d-ico">${ICO_LI}</span>${valorDado(liPerfil?"Ver perfil":"— sem LinkedIn",liPerfil)}</div>` +
+  `</div>`;
+}
+function blocoContato(l){
+  const tel=linkWhats(l.telefone)||linkTel(l.telefone);
   const nota=l.obs?`<span class="obs">💬 ${esc(l.obs)}</span>`:"";
-  if(!linhas.length&&!nota)return `<div class="sub"><span>Sem contato anotado</span></div>`;
-  return `<div class="ctt">${linhas.join("")}${nota}</div>`;
+  if(!tel&&!nota)return "";
+  return `<div class="ctt">${tel||""}${nota}</div>`;
 }
 function filtroAtual(){
   const sel=$("filtroStatus");
@@ -1406,6 +1502,7 @@ function render(){
         <div class="row-title"><span class="b">${esc(l.nome)}</span></div>
         ${blocoContato(l)}
       </div>
+      ${dadosLead(l)}
       <div class="row-meta">
         ${l.cidade?`<span class="tag">📍 ${esc(l.cidade)}</span>`:""}
         ${l.nicho?`<span class="tag">${esc(l.nicho)}</span>`:""}
@@ -1419,7 +1516,9 @@ function render(){
     </div>`;
   }).filter(Boolean);
   const lPag=paginar(lsRows);
-  $("tabelaLeads").innerHTML=(lPag.fatia.length?`<div class="list-head"><span>Lead / Contato</span><span>Cidade · Nicho · Status</span></div>${lPag.fatia.join("")}`:`<div class="empty"><div class="ico">📭</div><h3>Nenhum lead encontrado</h3><p>Cadastre empresas sem site encontradas no Google Maps para iniciar o acompanhamento.</p><button class="btn-primary" onclick="document.getElementById('btnAdd').click()">+ Cadastrar primeiro lead</button></div>`)+lPag.ctrl;
+  const temEmail=data.leads.some(l=>emailsBons(l.email).length);
+  const headLeads=`<div class="list-head list-head-leads"><span>Lead / Contato</span><span>Dados — e-mail · site · LinkedIn</span><span>Cidade · Nicho · Status</span><span class="head-toggle">${temEmail?`<button type="button" class="row-toggle" onclick="revelarTodosEmails(${lerRevelado().size?"false":"true"})" title="Mostrar ou esconder todos os e-mails da lista">${lerRevelado().size?"🙈 Ocultar e-mails":"👁 Mostrar e-mails"}</button>`:""}</span></div>`;
+  $("tabelaLeads").innerHTML=(lPag.fatia.length?headLeads+lPag.fatia.join(""):`<div class="empty"><div class="ico">📭</div><h3>Nenhum lead encontrado</h3><p>Cadastre empresas sem site encontradas no Google Maps para iniciar o acompanhamento.</p><button class="btn-primary" onclick="document.getElementById('btnAdd').click()">+ Cadastrar primeiro lead</button></div>`)+lPag.ctrl;
 
   const cmsRows=data.campanhas.map((x,i)=>{
     const hay=norm([x.nome,x.nicho,x.bairro,(x.cidades||[]).join(" "),x.status,x.obs].join(" "));
