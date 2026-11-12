@@ -288,24 +288,32 @@ body.cs-rolagem .main{overscroll-behavior:contain}
 /* cabeçalho da lista de leads: colunas alinhadas com a linha do lead */
 .list-head.list-head-leads{
   display:grid;
-  grid-template-columns:42px minmax(0,1fr) 300px minmax(0,1fr) auto;
+  grid-template-columns:42px minmax(0,1fr) minmax(0,1fr) 300px auto;
+  grid-template-areas:"av main meta dados side";
   gap:12px;align-items:center;
 }
 @media (max-width:1240px){
-  .list-head.list-head-leads{grid-template-columns:42px minmax(0,1fr) 300px auto}
-  .list-head.list-head-leads span:nth-child(3){display:none}
+  .list-head.list-head-leads{grid-template-columns:42px minmax(0,1fr) auto;grid-template-areas:"av main side"}
+  .list-head.list-head-leads span[data-col="meta"]{display:none}
+  .list-head.list-head-leads span[data-col="dados"]{display:none}
 }
 @media (min-width:1061px){
-  #tabelaLeads .row{display:grid;grid-template-columns:36px minmax(0,1fr) 300px minmax(0,1fr) auto;align-items:center}
+  #tabelaLeads .row{display:grid;grid-template-columns:36px minmax(0,1fr) minmax(0,1fr) 300px auto;
+    grid-template-areas:"av main meta dados side";align-items:center;justify-items:stretch}
   #tabelaLeads .row-side{margin-left:0;justify-self:end}
 }
 @media (min-width:1061px) and (max-width:1240px){
-  #tabelaLeads .row{grid-template-columns:36px minmax(0,1fr) 300px auto;row-gap:8px}
-  #tabelaLeads .row-dados{order:3}
-  #tabelaLeads .row-meta{grid-column:1/-1;order:4;padding-left:48px}
-  #tabelaLeads .row-side{grid-column:1/-1;order:5;justify-self:start;padding-left:48px}
+  #tabelaLeads .row{grid-template-columns:36px minmax(0,1fr) 300px minmax(0,auto);grid-template-areas:"av main dados side" "meta meta meta meta";row-gap:8px}
+  #tabelaLeads .row-meta{padding-left:48px}
+  #tabelaLeads .row-side{justify-self:end}
 }
 .list-head.list-head-leads span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list-head.list-head-leads .head-dados{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#tabelaLeads .row .avatar{grid-area:av}
+#tabelaLeads .row .row-main{grid-area:main}
+#tabelaLeads .row .row-meta{grid-area:meta}
+#tabelaLeads .row .row-dados{grid-area:dados}
+#tabelaLeads .row .row-side{grid-area:side}
 .list-head .head-toggle{text-align:right;text-transform:none;letter-spacing:0}
 .head-toggle .row-toggle{font-size:.68rem}
 .row{
@@ -1530,7 +1538,7 @@ function render(){
   }).filter(Boolean);
   const lPag=paginar(lsRows);
   const temEmail=data.leads.some(l=>emailsBons(l.email).length);
-  const headLeads=`<div class="list-head list-head-leads"><span>Lead / Contato</span><span>Dados — e-mail · site · LinkedIn</span><span>Cidade · Nicho · Status</span><span class="head-toggle">${temEmail?`<button type="button" class="row-toggle" onclick="revelarTodosEmails(${lerRevelado().size?"false":"true"})" title="Mostrar ou esconder todos os e-mails da lista">${lerRevelado().size?"🙈 Ocultar e-mails":"👁 Mostrar e-mails"}</button>`:""}</span></div>`;
+  const headLeads=`<div class="list-head list-head-leads"><span class="head-av" style="grid-area:av"></span><span data-col="main" style="grid-area:main">Lead / Contato</span><span data-col="meta" style="grid-area:meta">Cidade · Nicho · Status</span><span data-col="dados" style="grid-area:dados;display:flex;align-items:center;justify-content:space-between;gap:8px"><span class="head-dados">Dados — e-mail · site · LinkedIn</span><span class="head-toggle">${temEmail?`<button type="button" class="row-toggle" onclick="revelarTodosEmails(${lerRevelado().size?"false":"true"})" title="Mostrar ou esconder todos os e-mails da lista">${lerRevelado().size?"🙈 Ocultar e-mails":"👁 Mostrar e-mails"}</button>`:""}</span></span><span class="head-side" style="grid-area:side"></span></div>`;
   $("tabelaLeads").innerHTML=(lPag.fatia.length?headLeads+lPag.fatia.join(""):`<div class="empty"><div class="ico">📭</div><h3>Nenhum lead encontrado</h3><p>Cadastre empresas sem site encontradas no Google Maps para iniciar o acompanhamento.</p><button class="btn-primary" onclick="document.getElementById('btnAdd').click()">+ Cadastrar primeiro lead</button></div>`)+lPag.ctrl;
 
   const cmsRows=data.campanhas.map((x,i)=>{
