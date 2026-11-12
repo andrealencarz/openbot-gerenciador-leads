@@ -312,6 +312,15 @@ select{cursor:pointer}
   color:var(--gz-green)!important;font-weight:600;
   background:var(--gz-green-soft);padding:1px 7px;border-radius:999px;font-size:.72rem;
 }
+.li-link{
+  color:#5aa9e6!important;font-weight:600;
+  background:rgba(90,169,230,.12);padding:1px 8px;border-radius:999px;font-size:.72rem;
+}
+.site-link{
+  color:var(--gz-text-sec)!important;
+  background:var(--gz-card2);border:1px solid var(--gz-border);
+  padding:1px 8px;border-radius:999px;font-size:.72rem;
+}
 .row-meta{
   display:flex;align-items:center;gap:6px;flex-wrap:wrap;
   flex:0 1 42%;justify-content:flex-end;
@@ -757,6 +766,10 @@ dialog textarea{resize:vertical;min-height:72px;line-height:1.5}
           <option value="fechado">Fechado</option><option value="perdido">Perdido</option>
         </select></div>
       </div>
+      <div class="grid2">
+        <div><label>Site</label><input id="flApresentacao" placeholder="https://empresa.com.br"></div>
+        <div><label>Perfil no LinkedIn</label><input id="flLinkedin" placeholder="https://www.linkedin.com/in/… ou /company/…"></div>
+      </div>
       <label>Observações</label><textarea id="flObs" placeholder="Horário de atendimento, decisor, link do Maps…"></textarea>
     </div>
 
@@ -1092,11 +1105,48 @@ function tagSite(v){
   if(v==="com site")return `<span class="tag com">● com site</span>`;
   return `<span class="tag">site ?</span>`;
 }
+function telefoneBr(tel){
+  // só vira link quando o número parece Brasil: 10 a 13 dígitos, +55 ou DDD
+  const dig=String(tel||"").replace(/\D/g,"");
+  if(dig.length<10||dig.length>13)return false;
+  if(String(tel).trim().startsWith("+"))return dig.startsWith("55");
+  if(dig.startsWith("55"))return true;
+  const ddd=Number(dig.slice(0,2));
+  return dig.length===10||dig.length===11 ? (ddd>=11&&ddd<=99) : false;
+}
 function linkWhats(tel){
   const dig=String(tel||"").replace(/\D/g,"");
-  if(dig.length<10)return "";
+  if(!telefoneBr(tel))return "";
   const full=dig.startsWith("55")?dig:"55"+dig;
   return `<a class="wa-link" href="https://wa.me/${full}" target="_blank" rel="noopener" title="Abrir conversa no WhatsApp">WhatsApp ↗</a>`;
+}
+// telefone clicável (tel:) para números que não são do Brasil
+function linkTel(tel){
+  if(!tel||telefoneBr(tel))return "";
+  return `<a class="site-link" href="tel:${esc(String(tel).replace(/[^\d+]/g,""))}" title="Ligar">📞 ${esc(tel)}</a>`;
+}
+// URL segura e clicável a partir de site/linkedin; null quando não é um link
+function urlDe(v){
+  const s=String(v||"").trim();
+  if(!s||s==="sem site"||s==="com site"||s==="desconhecido")return null;
+  if(/^https?:\/\//i.test(s))return s;
+  if(/^www\.|^[\w-]+(\.[\w-]+)+(\/.*)?$/i.test(s))return "https://"+s.replace(/^\/+/,"");
+  return null;
+}
+function ehLinkedIn(u){return /linkedin\.com\//i.test(u||"")}
+function rotuloUrl(u){
+  try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return u}
+}
+// Extras clicáveis da linha do lead: LinkedIn, site e telefone
+function linksLead(l){
+  const out=[];
+  const li=urlDe(l.site);
+  if(li&&ehLinkedIn(li))out.push(`<a class="li-link" href="${esc(li)}" target="_blank" rel="noopener" title="Abrir perfil no LinkedIn">LinkedIn ↗</a>`);
+  const ap=urlDe(l.apresentacao);
+  if(ap)out.push(`<a class="site-link" href="${esc(ap)}" target="_blank" rel="noopener" title="Abrir site">🌐 ${esc(rotuloUrl(ap))} ↗</a>`);
+  if(!ap&&li&&!ehLinkedIn(li))out.push(`<a class="site-link" href="${esc(li)}" target="_blank" rel="noopener" title="Abrir site">🌐 ${esc(rotuloUrl(li))} ↗</a>`);
+  if(l.telefone)out.push(linkWhats(l.telefone)||linkTel(l.telefone));
+  return out;
 }
 function filtroAtual(){
   const sel=$("filtroStatus");
@@ -1214,7 +1264,7 @@ function render(){
   $("btnLimpar").style.display=temFiltro?"inline-block":"none";
 
   let lsRows=data.leads.map((l,i)=>{
-    const hay=norm([l.nome,l.telefone,l.email,l.cidade,l.nicho,l.status,l.obs].join(" "));
+    const hay=norm([l.nome,l.telefone,l.email,l.cidade,l.nicho,l.status,l.obs,l.site,l.apresentacao].join(" "));
     if(!hay.includes(q))return "";
     if(fs&&l.status!==fs)return "";
     if(fCid&&norm(l.cidade||"")!==norm(fCid))return "";
@@ -1228,7 +1278,7 @@ function render(){
       <div class="avatar">${esc(iniciais(l.nome))}</div>
       <div class="row-main">
         <div class="row-title"><span class="b">${esc(l.nome)}</span></div>
-        <div class="sub">${subParts.join("<span>·</span>")||"<span>Sem contato anotado</span>"}</div>
+        <div class="sub">${subParts.join("<span>·</span>")||"<span>Sem contato anotado</span>"}${linksLead(l).length?"<span>·</span>"+linksLead(l).join(""):""}</div>
       </div>
       <div class="row-meta">
         ${l.cidade?`<span class="tag">📍 ${esc(l.cidade)}</span>`:""}
@@ -1327,7 +1377,10 @@ function abrir(kind,title,o){
   $("dlgTitle").textContent=title+" "+({leads:"lead",campanhas:"campanha",cidades:"cidade",nichos:"nicho"}[kind]);
   Object.entries(PANES).forEach(([k,id])=>$(id).style.display=k===kind?"block":"none");
   const set=(id,v)=>{const el=$(id);if(el)el.value=v||""};
-  if(kind==="leads"){set("flNome",o.nome);set("flTel",o.telefone);set("flEmail",o.email);set("flCidade",o.cidade);set("flNicho",o.nicho);set("flSite",o.site||"sem site");set("flStatus",o.status||"novo");set("flObs",o.obs)}
+  if(kind==="leads"){set("flNome",o.nome);set("flTel",o.telefone);set("flEmail",o.email);set("flCidade",o.cidade);set("flNicho",o.nicho);set("flSite",o.site||"sem site");set("flStatus",o.status||"novo");set("flObs",o.obs);
+    const u=urlDe(o.site);
+    set("flApresentacao",o.apresentacao||(u&&!ehLinkedIn(u)?u:""));
+    set("flLinkedin",o.linkedin||(u&&ehLinkedIn(u)?u:""))}
   if(kind==="campanhas"){
     set("fcNome",o.nome);set("fcStatus",o.status||"planejada");set("fcObs",o.obs);set("fcBairro",o.bairro);
     $("fcNicho").innerHTML=`<option value="">—</option>`+data.nichos.map(n=>`<option value="${esc(n.nome)}" ${o.nicho===n.nome?"selected":""}>${esc(n.nome)}</option>`).join("")+(o.nicho&&!data.nichos.some(n=>n.nome===o.nicho)?`<option value="${esc(o.nicho)}" selected>${esc(o.nicho)}</option>`:"");
@@ -1354,7 +1407,7 @@ $("btnSave").onclick=()=>{
   let obj;
   if(kind==="leads"){
     const nome=$("flNome").value.trim();if(!nome)return toast("Informe o nome");
-    obj={nome,telefone:$("flTel").value.trim(),email:$("flEmail").value.trim(),cidade:$("flCidade").value.trim(),nicho:$("flNicho").value.trim(),site:$("flSite").value,status:$("flStatus").value,obs:$("flObs").value.trim()};
+    obj={nome,telefone:$("flTel").value.trim(),email:$("flEmail").value.trim(),cidade:$("flCidade").value.trim(),nicho:$("flNicho").value.trim(),site:$("flSite").value,apresentacao:$("flApresentacao").value.trim(),linkedin:$("flLinkedin").value.trim(),status:$("flStatus").value,obs:$("flObs").value.trim()};
   }else if(kind==="campanhas"){
     const nome=$("fcNome").value.trim();if(!nome)return toast("Informe o nome da campanha");
     obj={nome,nicho:$("fcNicho").value,bairro:$("fcBairro").value.trim(),cidades:[...$("fcCidades").selectedOptions].map(op=>op.value),status:$("fcStatus").value,obs:$("fcObs").value.trim()};

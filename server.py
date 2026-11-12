@@ -9,7 +9,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 TABLES = {
     "cidades":   (["cidade", "uf", "status"], ["bairros"]),
     "nichos":    (["nome", "obs"], []),
-    "leads":     (["nome", "telefone", "email", "cidade", "nicho", "site", "status", "obs"], []),
+    "leads":     (["nome", "telefone", "email", "cidade", "nicho", "site", "status", "obs", "apresentacao", "linkedin"], []),
     "campanhas": (["nome", "nicho", "bairro", "status", "obs"], ["cidades"]),
 }
 
