@@ -308,6 +308,25 @@ select{cursor:pointer}
   display:inline-flex;align-items:center;gap:4px;
 }
 .sub a:hover{color:var(--gz-accent-hover)}
+/* contatos do lead: e-mail em cima, links em botões na linha de baixo */
+.ctt{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:5px}
+.ctt a{text-decoration:none}
+.ctt .em{
+  color:var(--gz-text-sec)!important;font-weight:500;white-space:nowrap;
+}
+.ctt .em:hover{color:var(--gz-accent-hover)}
+.ctt .lk{
+  font-weight:600;font-size:.74rem;
+  padding:3px 10px;border-radius:8px;
+  border:1px solid var(--gz-border);
+  background:var(--gz-card2);color:var(--gz-text-sec)!important;
+  white-space:nowrap;
+}
+.ctt .lk:hover{background:var(--gz-card-hover);color:var(--gz-text)!important;border-color:var(--gz-border-strong)}
+.ctt .lk.in{border-color:rgba(90,169,230,.45);color:#8cc6f2!important;background:rgba(90,169,230,.10)!important}
+.ctt .lk.in:hover{background:rgba(90,169,230,.18)!important;color:#fff!important}
+.ctt .nota{color:var(--gz-muted);font-size:.74rem}
+.ctt .obs{width:100%;color:var(--gz-muted);font-size:.74rem}
 .wa-link{
   color:var(--gz-green)!important;font-weight:600;
   background:var(--gz-green-soft);padding:1px 7px;border-radius:999px;font-size:.72rem;
@@ -1141,12 +1160,27 @@ function rotuloUrl(u){
 function linksLead(l){
   const out=[];
   const li=urlDe(l.site);
-  if(li&&ehLinkedIn(li))out.push(`<a class="li-link" href="${esc(li)}" target="_blank" rel="noopener" title="Abrir perfil no LinkedIn">LinkedIn ↗</a>`);
+  if(li&&ehLinkedIn(li))out.push(`<a class="lk in" href="${esc(li)}" target="_blank" rel="noopener" title="Abrir perfil no LinkedIn">LinkedIn ↗</a>`);
   const ap=urlDe(l.apresentacao);
-  if(ap)out.push(`<a class="site-link" href="${esc(ap)}" target="_blank" rel="noopener" title="Abrir site">🌐 ${esc(rotuloUrl(ap))} ↗</a>`);
-  if(!ap&&li&&!ehLinkedIn(li))out.push(`<a class="site-link" href="${esc(li)}" target="_blank" rel="noopener" title="Abrir site">🌐 ${esc(rotuloUrl(li))} ↗</a>`);
-  if(l.telefone)out.push(linkWhats(l.telefone)||linkTel(l.telefone));
+  if(ap)out.push(`<a class="lk" href="${esc(ap)}" target="_blank" rel="noopener" title="Abrir site">🌐 ${esc(rotuloUrl(ap))} ↗</a>`);
+  if(!ap&&li&&!ehLinkedIn(li))out.push(`<a class="lk" href="${esc(li)}" target="_blank" rel="noopener" title="Abrir site">🌐 ${esc(rotuloUrl(li))} ↗</a>`);
   return out;
+}
+// e-mails de contato do lead: descarta webhooks, caixas internas e sem resposta
+const RE_EMAIL_RUIM=/(^webhook_|webhook|noreply|no-reply|^dpo@|privacidade@|lgpd@|compliance@|juridic|legal@|security@|abuse@|seuemail@|staging|noreply)/i;
+function emailsBons(v){
+  return String(v||"").split(",").map(s=>s.trim()).filter(e=>e.includes("@")&&!RE_EMAIL_RUIM.test(e));
+}
+function blocoContato(l){
+  const ems=emailsBons(l.email);
+  const links=linkWhats(l.telefone)||linkTel(l.telefone);
+  const linhas=[];
+  ems.forEach(e=>linhas.push(`<a class="em" href="mailto:${esc(e)}" title="Enviar e-mail">✉️ ${esc(e)}</a>`));
+  if(links)linhas.push(links);
+  linhas.push(...linksLead(l));
+  const nota=l.obs?`<span class="obs">💬 ${esc(l.obs)}</span>`:"";
+  if(!linhas.length&&!nota)return `<div class="sub"><span>Sem contato anotado</span></div>`;
+  return `<div class="ctt">${linhas.join("")}${nota}</div>`;
 }
 function filtroAtual(){
   const sel=$("filtroStatus");
@@ -1270,15 +1304,11 @@ function render(){
     if(fCid&&norm(l.cidade||"")!==norm(fCid))return "";
     if(fUf&&norm(ufDe(l.cidade))!==norm(fUf))return "";
     const st=l.status||"novo";
-    const subParts=[];
-    if(l.telefone)subParts.push(`<span>📞 ${esc(l.telefone)}</span>${linkWhats(l.telefone)}`);
-    if(l.email)subParts.push(`<a href="mailto:${esc(l.email)}">✉️ ${esc(l.email)}</a>`);
-    if(l.obs)subParts.push(`<span>💬 ${esc(l.obs)}</span>`);
     return `<div class="row">
       <div class="avatar">${esc(iniciais(l.nome))}</div>
       <div class="row-main">
         <div class="row-title"><span class="b">${esc(l.nome)}</span></div>
-        <div class="sub">${subParts.join("<span>·</span>")||"<span>Sem contato anotado</span>"}${linksLead(l).length?"<span>·</span>"+linksLead(l).join(""):""}</div>
+        ${blocoContato(l)}
       </div>
       <div class="row-meta">
         ${l.cidade?`<span class="tag">📍 ${esc(l.cidade)}</span>`:""}
