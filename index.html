@@ -138,8 +138,8 @@ body{
   min-width:0;
   padding:26px 32px 56px;
   max-width:1480px;
-  width:100%;
-  margin:0 auto;
+  width:100%;  margin:0 auto;
+  overscroll-behavior:contain;
 }
 .page-head{
   display:flex;align-items:center;justify-content:space-between;gap:14px;
@@ -248,7 +248,9 @@ select{cursor:pointer}
 }
 .cs.open .cs-menu{display:block}
 /* a roda do mouse rola a lista de opções, não a página atrás */
-.cs.open .cs-menu{overflow-y:auto}
+.cs.open .cs-menu{overflow-y:auto;pointer-events:auto}
+/* enquanto há lista aberta, a roda sobre o painel rola a lista em vez da página */
+body.cs-rolagem .main{overscroll-behavior:contain}
 .cs-opt{
   display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;
   font-size:.84rem;color:var(--gz-text-sec);cursor:pointer;user-select:none;
@@ -919,6 +921,8 @@ function csBuild(sel){
   wrap._sel=sel;
   const btn=wrap.querySelector(".cs-btn");
   btn.addEventListener("click",e=>{e.stopPropagation();csToggle(wrap)});
+  // rolar a roda sobre o próprio botão deixa a lista seguir rolando (não fecha e nem abre outra)
+  btn.addEventListener("wheel",e=>{if(csAberto)e.stopPropagation()},{passive:true});
   btn.addEventListener("keydown",e=>{
     if(!wrap.classList.contains("open")){
       if(e.key==="Enter"||e.key===" "||e.key==="ArrowDown"){e.preventDefault();csToggle(wrap)}
@@ -976,33 +980,46 @@ function csPosicionar(wrap){
   menu.style.width=largura+"px";
   menu.style.left=Math.max(8,Math.min(r.left,window.innerWidth-largura-8))+"px";
   menu.style.minWidth="";
-  menu.style.maxHeight="";
-  menu.style.top="0px";
-  menu.style.visibility="hidden";
-  // lista curta: o bastante para 6 opções, nunca mais que 240px
+  // lista curta: abre abaixo do botão e mostra até 6 opções (o resto por rolagem).
+  // Só abre para cima quando não há espaço nenhum embaixo.
   const total=Math.min(menu.scrollHeight,240);
   const abaixo=Math.max(0,window.innerHeight-r.bottom-16);
-  const acima=Math.max(0,r.top-16);
   let altura=Math.min(total,abaixo);
   let topo=r.bottom+6;
-  if(altura<Math.min(total,130)&&acima>altura){
+  if(altura<90){
+    const acima=Math.max(0,r.top-16);
     altura=Math.min(total,acima);
     topo=Math.round(r.top-altura-6);
   }
   menu.style.maxHeight=Math.max(90,altura)+"px";
   menu.style.top=Math.round(topo)+"px";
-  menu.style.visibility="";
 }
 function csToggle(wrap){
   if(wrap.classList.contains("open")){csClose();return}
   csClose();
+  const btn=wrap.querySelector(".cs-btn"),menu=wrap.querySelector(".cs-menu");
+  // 1) mede a lista com tamanho natural, fora da tela, para saber a altura real
+  wrap.classList.add("open");
+  menu.style.visibility="hidden";
+  menu.style.top="-9999px";
+  menu.style.maxHeight="";
+  void menu.offsetHeight;
+  // 2) posiciona (abaixo do botão, altura para 6 opções) e sua a lista até a opção atual
+  csPosicionar(wrap);
+  menu.style.visibility="";
+  const atual=menu.querySelector('.cs-opt[aria-selected="true"]');
+  if(atual){
+    const topoOpt=atual.offsetTop-menu.offsetTop, base=topoOpt+atual.offsetHeight;
+    if(topoOpt<menu.scrollTop||base>menu.scrollTop+menu.clientHeight){
+      menu.scrollTop=Math.max(0,topoOpt-(menu.clientHeight-atual.offsetHeight)/2);
+    }
+  }else{
+    menu.scrollTop=0;
+  }
   wrap.classList.add("open");
   csAberto=wrap;
-  const btn=wrap.querySelector(".cs-btn"),menu=wrap.querySelector(".cs-menu");
+  document.body.classList.add("cs-rolagem");
   btn.setAttribute("aria-expanded","true");
-  csPosicionar(wrap);
-  const atual=menu.querySelector('.cs-opt[aria-selected="true"]');
-  if(atual)atual.scrollIntoView({block:"nearest"});
 }
 
 function csClose(){
@@ -1011,21 +1028,23 @@ function csClose(){
   const b=csAberto.querySelector(".cs-btn");
   if(b)b.setAttribute("aria-expanded","false");
   const m=csAberto.querySelector(".cs-menu");
-  if(m){m.style.maxHeight="";m.style.visibility=""}
+  if(m){m.style.maxHeight="";m.style.visibility="";m.style.top=""}
   csAberto=null;
+  document.body.classList.remove("cs-rolagem");
 }
 document.addEventListener("click",()=>csClose());
 window.addEventListener("resize",()=>csClose());
-window.addEventListener("scroll",()=>csClose(),true);
-// se a página rolar, reposiciona a lista aberta em vez de deixá-la flutuando no lugar errado
+// A lista fica aberta durante a rolagem: se o botão sair da tela, fecha; senão,
+// mantém a lista grudada nele. Fechar no meio da própria rolagem era o que fazia o select sumir.
 document.addEventListener("scroll",e=>{
   if(!csAberto)return;
   const alvo=e.target;
   if(alvo&&alvo.nodeType===1&&alvo.closest&&alvo.closest(".cs-menu"))return;
+  const btn=csAberto.querySelector(".cs-btn");
+  if(!btn)return;
+  const r=btn.getBoundingClientRect();
+  if(r.bottom<0||r.top>window.innerHeight){csClose();return}
   const menu=csAberto.querySelector(".cs-menu");
-  const r=csAberto.querySelector(".cs-btn").getBoundingClientRect();
-  // se o botão saiu da tela, fecha; senão mantém a lista grudada nele
-  if(r.bottom<8||r.top>window.innerHeight-8){csClose();return}
   if(menu)menu.style.visibility="hidden";
   csPosicionar(csAberto);
 },true);
