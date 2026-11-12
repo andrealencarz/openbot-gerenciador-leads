@@ -44,8 +44,9 @@ serve só para a primeira carga quando o banco ainda não existe.
 **Skill (recomendado):** cole no chat do OpenBot:
 
 ```
-Instale a skill "gerenciador-leads" (https://github.com/andrealencarz/openbot-skill-gerenciador-leads)
-e prepare o dashboard na minha máquina.
+Instale a skill "gerenciador-leads" deste endereço:
+https://github.com/andrealencarz/openbot-skill-gerenciador-leads
+Baixe o SKILL.md, salve como skill local chamada gerenciador-leads e prepare o dashboard na minha máquina.
 ```
 
 **Prompt simples:** cole no chat do OpenBot:
