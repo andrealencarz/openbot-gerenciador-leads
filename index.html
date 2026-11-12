@@ -711,7 +711,7 @@ dialog textarea{resize:vertical;min-height:72px;line-height:1.5}
     </div>
 
     <div class="sidebar-foot">
-      <div class="db-pill"><span class="dot" id="dbDot"></span><span id="dbTxt">SQLite sincronizado</span></div>
+      <div class="db-pill"><span class="dot" id="dbDot"></span><span id="dbTxt">Conectando…</span></div>
       <div class="side-actions">
         <button class="btn-ghost btn-sm" id="btnExportSide" title="Exportar backup JSON">⬇️ Exportar</button>
         <button class="btn-ghost btn-sm" id="btnImportSide" title="Importar backup JSON">⬆️ Importar</button>
@@ -1045,9 +1045,30 @@ function alertaPersistencia(){
   if(dot)dot.classList.add("off");
   if(txt)txt.textContent="Modo local (sem SQLite)";
 }
-fetch(API+"/api/state").then(r=>r.json()).then(j=>{
-  if(j&&Array.isArray(j.cidades)&&j.cidades.length){data=j;render()}
-}).catch(()=>{serverOk=false;alertaPersistencia()});
+/* O SQLite é a fonte principal: sempre que ele responde, a tela usa os dados dele.
+   O localStorage é só uma cópia para consulta rápida quando o servidor não responde. */
+function substituirDados(j){
+  const versaoAnterior=JSON.stringify(data);
+  data=j;
+  try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}
+  return versaoAnterior!==JSON.stringify(data);
+}
+function carregarDoServidor(){
+  return fetch(API+"/api/state").then(r=>r.json()).then(j=>{
+    if(!(j&&Array.isArray(j.cidades)))throw new Error("resposta sem dados");
+    serverOk=true;
+    $("warn").style.display="none";
+    $("dbDot")&&$("dbDot").classList.remove("off");
+    if($("dbTxt"))$("dbTxt").textContent="SQLite (fonte principal)";
+    return substituirDados({cidades:j.cidades||[],nichos:j.nichos||[],leads:j.leads||[],campanhas:j.campanhas||[]});
+  }).catch(()=>{serverOk=false;alertaPersistencia();return false});
+}
+carregarDoServidor().then(mudou=>{render();if(mudou)toast("Dados atualizados do banco")});
+// volta para a aba e recarrega do banco, para nunca ficar preso numa cópia antiga
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState!=="visible")return;
+  carregarDoServidor();
+});
 
 let tab="dashboard",editIdx=null;
 function save(){
@@ -1055,7 +1076,16 @@ function save(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
     fetch(API+"/api/state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
-      .then(r=>r.json()).then(j=>{if(j&&Array.isArray(j.cidades)){data=j;stats();atualizarContadores()}}).catch(()=>{serverOk=false;alertaPersistencia()});
+      .then(r=>r.json()).then(j=>{
+        if(!(j&&Array.isArray(j.cidades)))throw new Error("gravação sem resposta");
+        serverOk=true;
+        $("warn").style.display="none";
+        $("dbDot")&&$("dbDot").classList.remove("off");
+        if($("dbTxt"))$("dbTxt").textContent="SQLite (fonte principal)";
+        data={cidades:j.cidades,nichos:j.nichos||data.nichos,leads:j.leads||data.leads,campanhas:j.campanhas||data.campanhas};
+        try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}
+        stats();atualizarContadores();render();
+      }).catch(()=>{serverOk=false;alertaPersistencia()});
   },250);
 }
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
