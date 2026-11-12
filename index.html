@@ -742,6 +742,7 @@ dialog textarea{resize:vertical;min-height:72px;line-height:1.5}
         <input type="search" id="busca" placeholder="Buscar por nome, telefone, cidade, bairro… ( / )">
       </div>
       <select id="filtroCidade"><option value="">Cidade: todas</option></select>
+      <select id="filtroNicho"><option value="">Nicho: todos</option></select>
       <select id="filtroUf"><option value="">UF: todas</option></select>
       <select id="filtroStatus"><option value="">Status: todos</option></select>
       <div class="filter-meta">
@@ -1207,6 +1208,18 @@ function filtrosCidadeUf(){
   mostrarFiltro("filtroUf",mostrar);
   return {cidade:cv,uf:uv};
 }
+function filtrosNicho(){
+  const fn=$("filtroNicho");
+  const nichos=new Set();
+  data.nichos.forEach(n=>{if(n.nome)nichos.add(n.nome)});
+  data.leads.forEach(l=>{if(l.nicho)nichos.add(l.nicho)});
+  data.campanhas.forEach(c=>{if(c.nicho)nichos.add(c.nicho)});
+  const nv=fn.value;
+  fn.innerHTML=`<option value="">Nicho: todos</option>`+[...nichos].sort((a,b)=>a.localeCompare(b,"pt-BR")).map(n=>`<option ${nv===n?"selected":""} value="${esc(n)}">${esc(n)}</option>`).join("");
+  const mostrar=(tab==="leads"||tab==="campanhas");
+  mostrarFiltro("filtroNicho",mostrar);
+  return {nicho:nv};
+}
 function ufDe(cidade){
   const c=data.cidades.find(x=>norm(x.cidade)===norm(cidade||""));
   return c?(c.uf||""):"";
@@ -1294,13 +1307,15 @@ function render(){
   const q=norm($("busca").value.trim());
   const fs=filtroAtual();
   const {cidade:fCid,uf:fUf}=filtrosCidadeUf();
-  const temFiltro=Boolean(q||fs||fCid||fUf);
+  const {nicho:fNic}=filtrosNicho();
+  const temFiltro=Boolean(q||fs||fCid||fUf||fNic);
   $("btnLimpar").style.display=temFiltro?"inline-block":"none";
 
   let lsRows=data.leads.map((l,i)=>{
     const hay=norm([l.nome,l.telefone,l.email,l.cidade,l.nicho,l.status,l.obs,l.site,l.apresentacao].join(" "));
     if(!hay.includes(q))return "";
     if(fs&&l.status!==fs)return "";
+    if(fNic&&norm(l.nicho||"")!==norm(fNic))return "";
     if(fCid&&norm(l.cidade||"")!==norm(fCid))return "";
     if(fUf&&norm(ufDe(l.cidade))!==norm(fUf))return "";
     const st=l.status||"novo";
@@ -1329,6 +1344,7 @@ function render(){
     const hay=norm([x.nome,x.nicho,x.bairro,(x.cidades||[]).join(" "),x.status,x.obs].join(" "));
     if(!hay.includes(q))return "";
     if(fs&&x.status!==fs)return "";
+    if(fNic&&norm(x.nicho||"")!==norm(fNic))return "";
     const st=x.status||"planejada";
     const cids=x.cidades||[];
     return `<div class="row">
@@ -1429,7 +1445,7 @@ $("btnAdd").onclick=()=>{editIdx=null;abrir(tab,"Adicionar",{})};
 $("btnCancel").onclick=()=>$("dlg").close();
 $("btnCloseX").onclick=()=>$("dlg").close();
 $("btnLimpar").onclick=()=>{
-  $("busca").value="";$("filtroCidade").value="";$("filtroUf").value="";$("filtroStatus").value="";
+  $("busca").value="";$("filtroCidade").value="";$("filtroNicho").value="";$("filtroUf").value="";$("filtroStatus").value="";
   pagina[tab]=1;render();
 };
 $("btnSave").onclick=()=>{
@@ -1455,6 +1471,7 @@ $("busca").oninput=()=>{pagina[tab]=1;render()};
 $("filtroStatus").onchange=()=>{pagina[tab]=1;render()};
 $("filtroCidade").onchange=()=>{pagina[tab]=1;render()};
 $("filtroUf").onchange=()=>{pagina[tab]=1;render()};
+$("filtroNicho").onchange=()=>{pagina[tab]=1;render()};
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   t.classList.add("active");tab=t.dataset.tab;
