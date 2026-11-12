@@ -244,8 +244,11 @@ select{cursor:pointer}
   background:var(--gz-card2);border:1px solid var(--gz-border-strong);
   border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.7);
   padding:5px;max-height:280px;overflow:auto;
+  overscroll-behavior:contain;
 }
 .cs.open .cs-menu{display:block}
+/* a roda do mouse rola a lista de opções, não a página atrás */
+.cs.open .cs-menu{overflow-y:auto}
 .cs-opt{
   display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;
   font-size:.84rem;color:var(--gz-text-sec);cursor:pointer;user-select:none;
@@ -941,6 +944,13 @@ function csBuild(sel){
     csRefresh(wrap);
     btn.focus();
   });
+  // rolar/digitar dentro da lista não pode fechar o menu nem mover a página
+  const menuEl=wrap.querySelector(".cs-menu");
+  menuEl.addEventListener("wheel",e=>{
+    if(menuEl.scrollHeight<=menuEl.clientHeight)return;
+    e.stopPropagation();
+  },{passive:true});
+  menuEl.addEventListener("touchmove",e=>e.stopPropagation(),{passive:true});
   return wrap;
 }
 
@@ -959,13 +969,8 @@ function csRefresh(wrap){
   menu.scrollTop=0;
 }
 
-function csToggle(wrap){
-  if(wrap.classList.contains("open")){csClose();return}
-  csClose();
-  wrap.classList.add("open");
-  csAberto=wrap;
+function csPosicionar(wrap){
   const btn=wrap.querySelector(".cs-btn"),menu=wrap.querySelector(".cs-menu");
-  btn.setAttribute("aria-expanded","true");
   const r=btn.getBoundingClientRect();
   const largura=Math.min(Math.max(r.width,170),window.innerWidth-16);
   menu.style.width=largura+"px";
@@ -981,6 +986,15 @@ function csToggle(wrap){
     menu.style.top=(r.bottom+6)+"px";
   }
   menu.style.visibility="";
+}
+function csToggle(wrap){
+  if(wrap.classList.contains("open")){csClose();return}
+  csClose();
+  wrap.classList.add("open");
+  csAberto=wrap;
+  const btn=wrap.querySelector(".cs-btn"),menu=wrap.querySelector(".cs-menu");
+  btn.setAttribute("aria-expanded","true");
+  csPosicionar(wrap);
   const atual=menu.querySelector('.cs-opt[aria-selected="true"]');
   if(atual)atual.scrollIntoView({block:"nearest"});
 }
@@ -997,6 +1011,18 @@ function csClose(){
 document.addEventListener("click",()=>csClose());
 window.addEventListener("resize",()=>csClose());
 window.addEventListener("scroll",()=>csClose(),true);
+// se a página rolar, reposiciona a lista aberta em vez de deixá-la flutuando no lugar errado
+document.addEventListener("scroll",e=>{
+  if(!csAberto)return;
+  const alvo=e.target;
+  if(alvo&&alvo.nodeType===1&&alvo.closest&&alvo.closest(".cs-menu"))return;
+  const menu=csAberto.querySelector(".cs-menu");
+  const r=csAberto.querySelector(".cs-btn").getBoundingClientRect();
+  // se o botão saiu da tela, fecha; senão mantém a lista grudada nele
+  if(r.bottom<8||r.top>window.innerHeight-8){csClose();return}
+  if(menu)menu.style.visibility="hidden";
+  csPosicionar(csAberto);
+},true);
 
 function enhanceSelects(){
   document.querySelectorAll("select").forEach(sel=>{
