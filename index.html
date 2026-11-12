@@ -288,12 +288,22 @@ body.cs-rolagem .main{overscroll-behavior:contain}
 /* cabeçalho da lista de leads: colunas alinhadas com a linha do lead */
 .list-head.list-head-leads{
   display:grid;
-  grid-template-columns:42px minmax(0,1fr) minmax(220px,33%) minmax(0,26%) auto;
+  grid-template-columns:42px minmax(0,1fr) 300px minmax(0,1fr) auto;
   gap:12px;align-items:center;
 }
+@media (max-width:1240px){
+  .list-head.list-head-leads{grid-template-columns:42px minmax(0,1fr) 300px auto}
+  .list-head.list-head-leads span:nth-child(3){display:none}
+}
 @media (min-width:1061px){
-  #tabelaLeads .row{display:grid;grid-template-columns:36px minmax(0,1fr) minmax(230px,33%) minmax(0,26%) auto;align-items:center}
+  #tabelaLeads .row{display:grid;grid-template-columns:36px minmax(0,1fr) 300px minmax(0,1fr) auto;align-items:center}
   #tabelaLeads .row-side{margin-left:0;justify-self:end}
+}
+@media (min-width:1061px) and (max-width:1240px){
+  #tabelaLeads .row{grid-template-columns:36px minmax(0,1fr) 300px auto;row-gap:8px}
+  #tabelaLeads .row-dados{order:3}
+  #tabelaLeads .row-meta{grid-column:1/-1;order:4;padding-left:48px}
+  #tabelaLeads .row-side{grid-column:1/-1;order:5;justify-self:start;padding-left:48px}
 }
 .list-head.list-head-leads span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .list-head .head-toggle{text-align:right;text-transform:none;letter-spacing:0}
@@ -329,8 +339,8 @@ body.cs-rolagem .main{overscroll-behavior:contain}
 .mail-mask,.mail-real{font-variant-numeric:tabular-nums}
 .mail-mask{color:var(--gz-text-sec)}
 .mail-real{color:var(--gz-accent-hover);font-weight:600}
-.row-dados{order:2;flex:0 1 33%;min-width:230px;display:flex;flex-direction:column;gap:4px;font-size:.76rem}
-.row-dados .d{display:flex;align-items:center;gap:7px;min-width:0}
+.row-dados{order:2;flex:0 0 300px;width:300px;max-width:300px;min-width:0;display:flex;flex-direction:column;gap:4px;font-size:.76rem}
+.row-dados .d{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:nowrap}
 .row-dados .d-ico{flex:0 0 auto;width:14px;text-align:center;opacity:.85}
 .row-dados .d-val{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gz-text-sec)}
 .row-dados a.d-val{text-decoration:none}
@@ -338,6 +348,7 @@ body.cs-rolagem .main{overscroll-behavior:contain}
 .row-dados .d-mail{cursor:default}
 .row-dados .d-off{color:var(--gz-muted);opacity:.7}
 .d-link{border:0;background:none;padding:0;font:inherit;font-size:.68rem;font-weight:600;color:var(--gz-accent-hover);cursor:pointer;text-decoration:underline}
+.row-dados .d-mail b{font-weight:600;color:var(--gz-text-sec);font-size:.7rem}
 .row-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .b{font-weight:650;font-size:.92rem;color:var(--gz-text);letter-spacing:-.01em}
 .sub{
@@ -661,7 +672,7 @@ dialog textarea{resize:vertical;min-height:72px;line-height:1.5}
   .tab{flex:1 1 auto}
   .row{flex-wrap:wrap;padding:13px 15px;gap:8px}
   .row-main{flex:1 1 calc(100% - 52px)}
-  .row-dados{order:3;flex:1 1 100%;padding-left:50px;min-width:0}
+  .row-dados{order:3;flex:1 1 100%;width:auto;max-width:none;padding-left:50px;min-width:0}
   .row-meta{order:4;flex:1 1 100%;justify-content:flex-start;padding-left:50px}
   .row-side{order:5;width:100%;justify-content:space-between;padding-left:50px;margin-left:0}
   .cs.status{max-width:none;flex:1;min-height:36px}
@@ -1304,7 +1315,9 @@ function emMascara(l){
   const revelado=lerRevelado().has(emailChave(l));
   const txt=revelado?ems.join(", "):ems.map(mascararEmail).join(", ");
   const titulo=revelado?"Ocultar e-mail":"Revelar e-mail";
-  return `<span class="d-val d-mail ${revelado?"mail-real":"mail-mask"}" title="${esc(txt)}">${esc(txt)}</span><button type="button" class="d-link" title="${titulo}" aria-label="${titulo}" onclick="toggleRevelar('${esc(emailChave(l))}')">${revelado?"ocultar":"mostrar"}</button>`;
+  const extra=ems.length>2?` <b>+${ems.length-2}</b>`:"";
+  const lista=ems.length>2?` title="${ems.length} e-mails — ${esc(txt)}"`:"";
+  return `<span class="d-val d-mail ${revelado?"mail-real":"mail-mask"}"${lista}>${esc(ems.slice(0,2).map(e=>revelado?e:mascararEmail(e)).join(", "))}${extra}</span><button type="button" class="d-link" title="${titulo}" aria-label="${titulo}" onclick="toggleRevelar('${esc(emailChave(l))}')">${revelado?"ocultar":"mostrar"}</button>`;
 }
 // a preferência de esconder/mostrar e-mails fica só neste navegador
 function lerRevelado(){
